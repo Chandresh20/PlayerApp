@@ -77,7 +77,11 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         sharedPreferences = getSharedPreferences(Constants.PREFS_MAIN, MODE_PRIVATE)
         setContentView(R.layout.activity_main)
-        Constants.orientationVertical = sharedPreferences.getBoolean(Constants.PREFS_IS_VERTICAL, false)
+        window?.setFlags(WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
+            WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED)
+ //       Constants.orientationVertical = sharedPreferences.getBoolean(Constants.PREFS_IS_VERTICAL, false)
+        Constants.rotationAngel = sharedPreferences.getFloat(Constants.PREFS_ROTATION_ANGLE, 0f)
+        Log.d("OrientationAngle", "${Constants.rotationAngel}")
         mainViewModel = ViewModelProvider(this).get(MainViewModel::class.java)
         mainViewModel.isIdHidden.value = sharedPreferences.getBoolean(Constants.PREFS_IS_ID_HIDDEN, false)
  //       startService(Intent(this, RestartService::class.java))
@@ -766,9 +770,16 @@ class MainActivity : AppCompatActivity() {
     private val rotateScreenListener = Emitter.Listener { args ->
         val msg = args[0]
         Log.d("RotationUpdate", "$msg")
-        Constants.orientationVertical = msg.toString() == "true"
+    /*    Constants.orientationVertical = msg.toString() == "true"
         sharedPreferences.edit().apply {
             putBoolean(Constants.PREFS_IS_VERTICAL, Constants.orientationVertical)
+        }.apply()  */
+        Constants.rotationAngel += 90f
+        if (Constants.rotationAngel >= 360f) {
+            Constants.rotationAngel = 0f
+        }
+        sharedPreferences.edit().apply {
+            putFloat(Constants.PREFS_ROTATION_ANGLE, Constants.rotationAngel)
         }.apply()
         if (!onSplashScreen) {
             broadcastContent(assignedContent)

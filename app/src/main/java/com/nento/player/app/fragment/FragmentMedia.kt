@@ -88,7 +88,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
         val proBar = rootView.findViewById<ProgressBar>(R.id.mediaProgressBar)
         screenId.text = Constants.screenID
 
-
         errorHandler = Handler(Looper.getMainLooper()) {
             val msg = it.obj as String
             Log.e("MediaError", msg)
@@ -109,7 +108,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 .load(file)
                 .diskCacheStrategy(DiskCacheStrategy.NONE)
                 .skipMemoryCache(true)
-            if (Constants.orientationVertical) {
+            if (Constants.rotationAngel > 0f) {
                 glide.override(MainActivity.displayHeight, MainActivity.displayWidth)
                 glide.transform(RotateTransformation())
             } else {
@@ -158,15 +157,18 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
         } */
         videoHandler = Handler(Looper.getMainLooper()) {
             val file = it.obj as String
-            playType = PLAY_TYPE_VIDEO
-            pImage.visibility = View.GONE
-            pImage2.visibility = View.GONE
-            pVideo.visibility = View.VISIBLE
-            customLayout.visibility = View.GONE
-            proBar.visibility = View.GONE
-            customLayout.removeAllViews()
-            Log.d("FileToPlay", file)
             playOnMediaPlayer(file)
+            playType = PLAY_TYPE_VIDEO
+            glideHandler.postDelayed( {
+                pImage.visibility = View.GONE
+                pImage2.visibility = View.GONE
+                pVideo.visibility = View.VISIBLE
+                customLayout.visibility = View.GONE
+                proBar.visibility = View.GONE
+                customLayout.removeAllViews()
+            } ,2000)  // video play needs some time directly showing video/textureView
+            // make the app frozen for few moment. that's why it delayed
+            Log.d("FileToPlay", file)
             true
         }
 
@@ -315,7 +317,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             it.start()
         }
         mediaPlayer.setOnVideoSizeChangedListener { mediaPlayer, width, height ->
-            if (Constants.orientationVertical) {
+            if (Constants.rotationAngel == 90f || Constants.rotationAngel == 270f) {
                 playVideoVertically(width, height, playlistTextureView)
             } else {
                 playVideoNormally(width, height, playlistTextureView)
@@ -357,7 +359,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             }
         }
         textureView?.layoutParams = vidParams
-        textureView?.rotation = 0f
+        textureView?.rotation = Constants.rotationAngel
     }
 
     private fun playVideoVertically(videoWidth: Int, videoHeight: Int, textureView: TextureView?) {
@@ -384,7 +386,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             }
         }
         textureView?.layoutParams = vidParams
-        textureView?.rotation = -90f
+        textureView?.rotation = Constants.rotationAngel
     }
 
     private fun generateDisplayItemList() {
@@ -501,9 +503,9 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                     delay(3000)
                                     continue
                                 }  */
-                                if (Constants.orientationVertical) {
+                                if (Constants.rotationAngel > 0) {
                                     val matrix = Matrix()
-                                    matrix.postRotate(-90f)
+                                    matrix.postRotate(Constants.rotationAngel)
                                     val rotateMap = Bitmap.createBitmap(imageMap, 0, 0, imageMap.width, imageMap.height, matrix, false)
                                     imageView.setImageBitmap(blurImage(rotateMap, true))
                                 } else {
@@ -717,7 +719,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
     class RotateTransformation : BitmapTransformation() {
 
         override fun updateDiskCacheKey(messageDigest: MessageDigest) {
-            messageDigest.update(("rotate$ROTATION_ANGLE").toByte())
+            messageDigest.update(("rotate${Constants.rotationAngel}").toByte())
         }
 
         override fun transform(
@@ -727,7 +729,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             outHeight: Int
         ): Bitmap {
             val matrix = Matrix()
-            matrix.postRotate(ROTATION_ANGLE)
+            matrix.postRotate(Constants.rotationAngel)
             return Bitmap.createBitmap(toTransform, 0, 0, toTransform.width, toTransform.height, matrix, true)
         }
 
@@ -737,7 +739,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
         const val PLAY_TYPE_IMAGE = 0
         const val PLAY_TYPE_VIDEO = 1
         const val PLAY_TYPE_LAYOUT = 2
-        const val ROTATION_ANGLE = -90f
+       // const val ROTATION_ANGLE = -90f
         var playType : Int = PLAY_TYPE_IMAGE
         @SuppressLint("StaticFieldLeak")
         var playlistTextureView : TextureView? = null

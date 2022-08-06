@@ -54,6 +54,7 @@ class Constants {
         const val PREFS_IS_VERTICAL = "isVertical"
         const val PREFS_IS_ID_HIDDEN = "isScreenIdHidden"
         const val PREFS_TEMPLATE_NAME = "templateName"
+        const val PREFS_ROTATION_ANGLE = "rotationAngle"
 
   //      const val ONE_SIGNAL_APP_ID = "02cfd1c0-9849-4041-94f2-891dd8930a3a"
 
@@ -93,8 +94,9 @@ class Constants {
   //      var restartApp = true
         var deviceMemory = "0B"
 
-        var orientationVertical = true
+    //    var orientationVertical = true
         var onSplashScreen = true
+        var rotationAngel = 0f
  //       const val imageWidthExtra = 1000
         const val autoRestartTime = 3600000L
  //       const val maxImageWidth = 3999
