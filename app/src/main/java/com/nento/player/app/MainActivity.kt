@@ -150,6 +150,7 @@ class MainActivity : AppCompatActivity() {
             displayWidth = point.x
             displayHeight = point.y
         }
+        Log.d("DisplayResolution", "$displayWidth, $displayHeight")
         mainViewModel.isOffline.value = !internetChangeReceiver.isInternetAvailable(this)
         checkForUpdate2()
         checkPermission()

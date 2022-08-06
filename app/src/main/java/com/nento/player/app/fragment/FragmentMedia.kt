@@ -36,12 +36,12 @@ import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.You
 import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.views.YouTubePlayerView
 import kotlinx.coroutines.*
 import java.io.File
-import java.lang.Exception
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool
 import com.bumptech.glide.load.resource.bitmap.BitmapTransformation
 import java.security.MessageDigest
+import kotlin.Exception
 
 
 const val CURRENT_TEMPLATE = 0
@@ -191,17 +191,17 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
 
                 var layoutFinished = 0
                 for (layout in (dLayoutObject.layout ?: emptyList())) {
-                    var layoutWidth : Int = (layout.width ?: 0).toInt()
-                    var layoutHeight : Int = (layout.height ?: 0).toInt()
-                    var layoutX : Int = (layout.x ?: 0).toInt()
-                    var layoutY : Int = (layout.y ?: 0).toInt()
+                    val layoutWidth : Int = (layout.width ?: 0).toInt()
+                    val layoutHeight : Int = (layout.height ?: 0).toInt()
+                    val layoutX : Int = (layout.x ?: 0).toInt()
+                    val layoutY : Int = (layout.y ?: 0).toInt()
 
-                    if (dLayoutObject.isVertical == true) {
+                  /*  if (dLayoutObject.isVertical == true) {
                         layoutWidth = (layout.height ?: 0).toInt()
                         layoutHeight = (layout.width ?: 0).toInt()
                         layoutX = (layout.y ?: 0).toInt()
                         layoutY = (layout.x ?: 0).toInt()
-                    }
+                    }  */
                     val linearLayout = LinearLayout(ctx)
                     linearLayout.layoutParams = ConstraintLayout.LayoutParams(
                         (layoutWidth * wMulti).toInt(), (layoutHeight * hMulti).toInt()).apply {
@@ -522,36 +522,74 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                             delay((media.timeInSeconds!! *1000).toLong())
                         }
                         Constants.MEDIA_VIDEO -> {
-                            val videoView = CustomVideoView(ctx)
-                            videoView.layoutParams = LinearLayout.LayoutParams(
-                                layout.width,
-                                layout.height
-                            )
-                            videoView.setOnPreparedListener { mediaPlayer ->
-                                mediaPlayer.setVolume(0f,0f)
+                            val textureView = TextureView(ctx)
+                            val mediaPlayer = MediaPlayer()
+                            textureView.surfaceTextureListener =
+                                object : TextureView.SurfaceTextureListener {
+                                override fun onSurfaceTextureAvailable(
+                                    p0: SurfaceTexture,
+                                    p1: Int,
+                                    p2: Int
+                                ) {
+                                    val surface = Surface(p0)
+                                    mediaPlayer.setSurface(surface)
+                                    Log.d("CustomVideo", "Surface Set")
+                                }
+
+                                override fun onSurfaceTextureSizeChanged(
+                                    p0: SurfaceTexture,
+                                    p1: Int,
+                                    p2: Int
+                                ) {
+                                    Log.d("CustomVideo", "Surface SizeChanged")
+                                }
+
+                                override fun onSurfaceTextureDestroyed(p0: SurfaceTexture): Boolean {
+                                    Log.d("CustomVideo", "Texture Destoreyed")
+                                    return false
+                                }
+
+                                override fun onSurfaceTextureUpdated(p0: SurfaceTexture) { }
+                            }
+                            textureView.layoutParams = if (Constants.rotationAngel == 90f || Constants.rotationAngel == 270f) {
+                                LinearLayout.LayoutParams(
+                                    layout.height,
+                                    layout.width
+                                ).apply {
+                                    topMargin = (layout.height - layout.width) / 2
+                                    marginStart = (layout.width - layout.height) / 2
+                                }
+                            } else {
+                                LinearLayout.LayoutParams(
+                                    layout.width, layout.height)
                             }
                             try {
+                                layout.addView(textureView)
+                                textureView.rotation = Constants.rotationAngel
                                 val videoFile = File(MainActivity.storageDir, "${Constants.CUSTOM_CONTENT_DIR}/$fileName")
-                                videoView.setVideoPath(videoFile.toString())
-                                layout.addView(videoView)
-                                Log.d("VideoView", "Trying to play : $videoFile")
-                                videoView.setOnErrorListener { mediaPlayer, i, i2 ->
-                                    Log.e("VideoView", "$mediaPlayer, $i, $i2")
-                                    true
+                                mediaPlayer.setDataSource(videoFile.toString())
+                                mediaPlayer.setVolume(0f,0f)
+                                mediaPlayer.setOnPreparedListener {
+                                    Log.d("CustomVideo", "MediaPlayer Set")
+                                    it.start()
                                 }
-                                videoView.start()
+                                mediaPlayer.setOnCompletionListener {
+                                    mediaPlayer.stop()
+                                    mediaPlayer.release()
+                                    Log.d("CustomVideo", "MediaPlayer released")
+                                }
+                                mediaPlayer.prepareAsync()
                                 for (i in 0 until (media.timeInSeconds ?: 5)) {
                                     if (currentMedia != CURRENT_CUSTOM) {
                                         break
                                     }
                                     delay(1000)
                                 }
-                                videoView.stopPlayback()
                             } catch (e: Exception) {
-                                errorHandler.obtainMessage(0, "Custom Layout Error: $e").sendToTarget()
-                                Log.e("CustomLayout", "$e")
-                                delay(500)
+                                Log.e("CustomVideoError", "$e")
+                                delay(1000)
                             }
+
                         }
                         Constants.MEDIA_WEB_PAGE -> {
                             if (customWebView == null) {
