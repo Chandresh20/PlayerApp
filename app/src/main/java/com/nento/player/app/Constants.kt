@@ -100,7 +100,7 @@ class Constants {
  //       const val imageWidthExtra = 1000
         const val autoRestartTime = 3600000L
  //       const val maxImageWidth = 3999
-        const val APP_VERSION_CODE = 32
+        const val APP_VERSION_CODE = 33
         const val APP_VERSION_NAME = "2.0.1 beta33"
     }
 }

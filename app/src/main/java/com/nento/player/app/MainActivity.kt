@@ -36,6 +36,7 @@ import android.provider.MediaStore
 import android.view.*
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import androidx.core.view.drawToBitmap
@@ -197,7 +198,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             Log.d("SocketService", "Already running")
         }  */
-        setHourRefresh()
+   //     setHourRefresh()
         CoroutineScope(Dispatchers.Main).launch {
             keepSendHeartBeatAsync().await()
         }
@@ -218,6 +219,26 @@ class MainActivity : AppCompatActivity() {
                 Log.d("SwitchToo", "::::::::::::::online")
             }
         }
+
+        Handler(Looper.getMainLooper()).postDelayed({
+            Log.d("App is going to restart", "App is going to restart")
+            Toast.makeText(applicationContext, "App is going to restart... ", Toast.LENGTH_LONG).show()
+            restartAppForEveryOneHour()
+        }, 3600000)
+    }
+
+    private fun restartAppForEveryOneHour () {
+        val intent = Intent(applicationContext, MainActivity::class.java)
+        val mPendingIntentId: Int = 10000
+        val mPendingIntent = PendingIntent.getActivity(
+            applicationContext,
+            mPendingIntentId,
+            intent,
+            PendingIntent.FLAG_CANCEL_CURRENT
+        )
+        val mgr = applicationContext.getSystemService(ALARM_SERVICE) as AlarmManager
+        mgr[AlarmManager.RTC, System.currentTimeMillis() + 100] = mPendingIntent
+        System.exit(0)
     }
 
     private fun loadAssignedContent() {
@@ -278,7 +299,7 @@ class MainActivity : AppCompatActivity() {
                     downFile.createNewFile()
                     newOutput = downFile.outputStream()
                     originalMap.compress(Bitmap.CompressFormat.JPEG, 100, newOutput)
-                    if (Constants.onSplashScreen) {
+                    if (onSplashScreen) {
                         sendBroadcast(Intent(Constants.START_MEDIA_BROADCAST))
                     }
                     delay(1000)
@@ -383,7 +404,7 @@ class MainActivity : AppCompatActivity() {
                 messageHandler.obtainMessage(0, "Error").sendToTarget()
                 return@launch
             }
-            if (Constants.onSplashScreen) {
+            if (onSplashScreen) {
                 sendBroadcast(Intent(Constants.START_MEDIA_BROADCAST))
             }
             currentPlaylist = playlistObject
@@ -519,7 +540,7 @@ class MainActivity : AppCompatActivity() {
             val typeT = object : TypeToken<CustomLayoutObject>() { }
             val customObject = gson.fromJson<CustomLayoutObject>(jsonObject.toString(), typeT.type)
             downloadCustomContents2Async(customObject.imageUrl).await()
-            if (Constants.onSplashScreen) {
+            if (onSplashScreen) {
                 sendBroadcast(Intent(Constants.START_MEDIA_BROADCAST))
                 delay(1000)
             }

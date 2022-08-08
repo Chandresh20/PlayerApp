@@ -60,6 +60,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
     private val itemArray = ArrayList<DisplayItems>()
     private var customWebView : WebView? = null
     private var youView : YouTubePlayerView? = null
+    private val mediaPlayerList = ArrayList<MediaPlayer>()
     private lateinit var mediaPlayer : MediaPlayer
 
     private lateinit var glideHandler: Handler
@@ -220,7 +221,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     youView = null
                     CoroutineScope(Dispatchers.Main).launch {
                         imRunning = true
-                        if (layout.repeat == true) {
+                   /*     if (layout.repeat == true) {
                             while (currentMedia == CURRENT_CUSTOM) {
                                 playCustomMediaAsync(linearLayout, dLayoutObject.isVertical, layout.media ?: emptyList()).await()
                             }
@@ -231,9 +232,13 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                         if (layoutFinished >= (dLayoutObject.layout?.size ?: 0)) {
                             imRunning = false
                             Log.d("CustomLayout", "all Finished")
-                        }
+                        } */
+                        // with new method assuming looping to be always true
+                        playCustomMedia2Async(linearLayout, layout.media ?: emptyList()).await()
+                        imRunning = false
                     }
                 }
+                Log.d("CustomLayout", "All layout set for new Method")
             } catch (e: Exception) {
                 Log.e("CustomError", "$e")
                 errorHandler.obtainMessage(0, "Error: $e").sendToTarget()
@@ -242,6 +247,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
         }
         val updateReceiver = object : BroadcastReceiver() {
             override fun onReceive(p0: Context?, p1: Intent?) {
+                Log.d("FragmentMedia", "Media change update")
                 currentMedia = -1
                 CoroutineScope(Dispatchers.Main).launch {
                     proBar.visibility = View.VISIBLE
@@ -249,6 +255,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                         Log.d("ImRunning", "Waiting for current media to stop")
                         delay(500)
                     }
+                    clearMediaPlayers()
                     when(p1?.action) {
                         Constants.NEW_TEMPLATE_READY_BROADCAST -> {
                             currentMedia = CURRENT_TEMPLATE
@@ -316,7 +323,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
         mediaPlayer.setOnPreparedListener {
             it.start()
         }
-        mediaPlayer.setOnVideoSizeChangedListener { mediaPlayer, width, height ->
+        mediaPlayer.setOnVideoSizeChangedListener { _, width, height ->
             if (Constants.rotationAngel == 90f || Constants.rotationAngel == 270f) {
                 playVideoVertically(width, height, playlistTextureView)
             } else {
@@ -458,6 +465,280 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 imRunning = false
             }
         }
+
+
+    private suspend fun playCustomMedia2Async(layout: LinearLayout, mediaList: List<CustomLayoutObject.MediaInfo>) =
+        coroutineScope {
+            async(Dispatchers.Main) {
+                if (mediaList.size == 1) {
+                    val mediaInfo = mediaList[0]
+                    val fileName = mediaInfo.fileName
+                    val mediaTime = ((mediaInfo.timeInSeconds?.toLong() ?: 10L) * 1000L)
+                    when(mediaInfo.type) {
+                        Constants.MEDIA_IMAGE -> {
+                            val imageView = ImageView(ctx)
+                            imageView.scaleType = ImageView.ScaleType.FIT_XY
+                            try {
+                                val imageFile = File(MainActivity.storageDir, "${Constants.CUSTOM_CONTENT_DIR}/$fileName")
+                                val imageStrm = imageFile.inputStream()
+                                val imageMap = BitmapFactory.decodeStream(imageStrm)
+                                if (Constants.rotationAngel > 0) {
+                                    val matrix = Matrix()
+                                    matrix.postRotate(Constants.rotationAngel)
+                                    val rotateMap = Bitmap.createBitmap(imageMap, 0, 0, imageMap.width, imageMap.height, matrix, false)
+                                    imageView.setImageBitmap(blurImage(rotateMap, true))
+                                } else {
+                                    Log.e("Image", "$imageFile ${imageMap.width}")
+                                    imageView.setImageBitmap(blurImage(imageMap, false))
+                                }
+                                layout.addView(imageView)
+                                imageStrm.close()
+                            } catch (e: Exception) {
+                                Log.e("CustomView", "$e at $fileName")
+                            }
+                        }
+                        Constants.MEDIA_VIDEO -> {
+                            val textureView = TextureView(ctx)
+                            val mediaPlayer = MediaPlayer()
+                            textureView.surfaceTextureListener =
+                                object : TextureView.SurfaceTextureListener {
+                                    override fun onSurfaceTextureAvailable(
+                                        p0: SurfaceTexture,
+                                        p1: Int,
+                                        p2: Int
+                                    ) {
+                                        val surface = Surface(p0)
+                                        mediaPlayer.setSurface(surface)
+                                        Log.d("CustomVideo", "Surface Set")
+                                    }
+
+                                    override fun onSurfaceTextureSizeChanged(
+                                        p0: SurfaceTexture,
+                                        p1: Int,
+                                        p2: Int
+                                    ) {
+                                        Log.d("CustomVideo", "Surface SizeChanged")
+                                    }
+
+                                    override fun onSurfaceTextureDestroyed(p0: SurfaceTexture): Boolean {
+                                        Log.d("CustomVideo", "Texture Destoreyed")
+                                        return false
+                                    }
+
+                                    override fun onSurfaceTextureUpdated(p0: SurfaceTexture) { }
+                                }
+                            textureView.layoutParams = if (Constants.rotationAngel == 90f || Constants.rotationAngel == 270f) {
+                                LinearLayout.LayoutParams(
+                                    layout.height,
+                                    layout.width
+                                ).apply {
+                                    topMargin = (layout.height - layout.width) / 2
+                                    marginStart = (layout.width - layout.height) / 2
+                                }
+                            } else {
+                                LinearLayout.LayoutParams(
+                                    layout.width, layout.height)
+                            }
+                            try {
+                                layout.addView(textureView)
+                                textureView.rotation = Constants.rotationAngel
+                                val videoFile = File(MainActivity.storageDir, "${Constants.CUSTOM_CONTENT_DIR}/$fileName")
+                                mediaPlayer.setDataSource(videoFile.toString())
+                                mediaPlayer.setVolume(0f,0f)
+                                mediaPlayer.isLooping = true
+                                val timerRunnable = object : Runnable {
+                                    override fun run() {
+                                        try {
+                                            Log.d("MediaPlayer11","trying to seek to 0")
+                                            mediaPlayer.seekTo(0)
+                                            videoHandler.postDelayed(this, mediaTime)
+                                        } catch (e: Exception) {
+                                            Log.e("MediaPlayer11", "replay error: $e")
+                                        }
+
+                                    }
+                                }
+                                mediaPlayer.setOnPreparedListener {
+                                    Log.d("CustomVideo", "MediaPlayer Set")
+                                    it.start()
+                                    Log.d("MediaPlayer11","${mediaPlayer.duration}")
+                                    if (mediaPlayer.duration > mediaTime) {
+                                        videoHandler.postDelayed(timerRunnable, mediaTime)
+                                        Log.d("MediaPlayer11","posting runnable in $mediaTime")
+                                    }
+                                }
+                                mediaPlayer.setOnCompletionListener {
+                                    mediaPlayer.stop()
+                                    mediaPlayer.release()
+                                    videoHandler.removeCallbacks(timerRunnable)
+                                    Log.d("CustomVideo", "MediaPlayer released")
+                                }
+                                mediaPlayer.prepareAsync()
+                      //          videoHandler.postDelayed(timerRunnable, mediaTime)
+                                mediaPlayerList.add(mediaPlayer)
+                            } catch (e: Exception) {
+                                Log.e("CustomVideoError", "$e")
+                                delay(1000)
+                            }
+                        }
+                        Constants.MEDIA_WEB_PAGE -> {
+
+                        }
+                        Constants.MEDIA_YOUTUBE -> {
+
+                        }
+                        else -> { Log.e("CustomLayout", "Unknown media type")}
+                    }
+                } else {
+                    val imageView = ImageView(ctx)
+                    imageView.scaleType = ImageView.ScaleType.FIT_XY
+                    val textureView = TextureView(ctx)
+                    val mediaPlayer = MediaPlayer()
+                    textureView.surfaceTextureListener =
+                        object : TextureView.SurfaceTextureListener {
+                            override fun onSurfaceTextureAvailable(
+                                p0: SurfaceTexture,
+                                p1: Int,
+                                p2: Int
+                            ) {
+                                val surface = Surface(p0)
+                                mediaPlayer.setSurface(surface)
+                                Log.d("CustomVideo", "Surface Set")
+                            }
+
+                            override fun onSurfaceTextureSizeChanged(
+                                p0: SurfaceTexture,
+                                p1: Int,
+                                p2: Int
+                            ) {
+                                Log.d("CustomVideo", "Surface SizeChanged")
+                            }
+
+                            override fun onSurfaceTextureDestroyed(p0: SurfaceTexture): Boolean {
+                                Log.d("CustomVideo", "Texture Destoreyed")
+                                return false
+                            }
+
+                            override fun onSurfaceTextureUpdated(p0: SurfaceTexture) { }
+                        }
+                    textureView.layoutParams = if (Constants.rotationAngel == 90f || Constants.rotationAngel == 270f) {
+                        LinearLayout.LayoutParams(
+                            layout.height,
+                            layout.width
+                        ).apply {
+                            topMargin = (layout.height - layout.width) / 2
+                            marginStart = (layout.width - layout.height) / 2
+                        }
+                    } else {
+                        LinearLayout.LayoutParams(
+                            layout.width, layout.height)
+                    }
+                    layout.addView(imageView)
+                    layout.addView(textureView)
+                    mediaPlayerList.add(mediaPlayer)
+                    val bitmapHasMap = HashMap<String, Bitmap>()
+                    mainLoop@ while(true) {
+                        for (media in mediaList) {
+                            val fileName = media.fileName
+                            val mediaTime = (media.timeInSeconds?.toLong() ?: 10000L) * 1000
+                            when(media.type) {
+                                Constants.MEDIA_IMAGE -> {
+                                    try {
+                                        textureView.visibility = View.GONE
+                                        imageView.visibility = View.VISIBLE
+                                        val imageFile = File(
+                                            MainActivity.storageDir,
+                                            "${Constants.CUSTOM_CONTENT_DIR}/$fileName"
+                                        )
+                                        val alreadyBMap = bitmapHasMap.get(fileName)
+                                        if (alreadyBMap == null) {
+                                            Log.d("CustomLayout", "$fileName creating bitmap")
+                                            val imageStrm = imageFile.inputStream()
+                                            val imageMap = BitmapFactory.decodeStream(imageStrm)
+                                            val useMap = if (Constants.rotationAngel > 0) {
+                                                val matrix = Matrix()
+                                                matrix.postRotate(Constants.rotationAngel)
+                                                val rotateMap = Bitmap.createBitmap(imageMap, 0, 0, imageMap.width, imageMap.height, matrix, false)
+                                                blurImage(rotateMap, true)
+                                            } else {
+                                                Log.e("Image", "$imageFile ${imageMap.width}")
+                                                blurImage(imageMap, false)
+                                            }
+                                            bitmapHasMap[fileName ?: "1"] = useMap
+                                            imageView.setImageBitmap(useMap)
+                                        } else {
+                                            Log.d("CustomLayout", "$fileName using already available bitmap")
+                                            imageView.setImageBitmap(alreadyBMap)
+                                        }
+                                        for (i in 0..(mediaTime/1000)) {
+                                            if (currentMedia != CURRENT_CUSTOM) {
+                                                Log.d("CustomLayout", "Stopping main loop")
+                                                break@mainLoop
+                                            }
+                                            delay(1000)
+                                        }
+                                    } catch (e: Exception) {
+                                        Log.e("CustomLayout", "in looping images: $e")
+                                        delay(mediaTime)
+                                    }
+                                }
+                                Constants.MEDIA_VIDEO -> {
+                                    try {
+                                        videoHandler.postDelayed( {
+                                            imageView.visibility = View.GONE
+                                            textureView.visibility = View.VISIBLE
+                                        }, 1000)
+                                        textureView.rotation = Constants.rotationAngel
+                                        val videoFile = File(MainActivity.storageDir, "${Constants.CUSTOM_CONTENT_DIR}/$fileName")
+                                        mediaPlayer.setDataSource(videoFile.toString())
+                                        mediaPlayer.setVolume(0f,0f)
+                                        mediaPlayer.isLooping = true
+                                        mediaPlayer.setOnPreparedListener {
+                                            Log.d("CustomVideo", "MediaPlayer Set")
+                                            it.start()
+                                        }
+                                        mediaPlayer.setOnCompletionListener {
+                                            mediaPlayer.stop()
+                                            Log.d("CustomVideo", "MediaPlayer stopped")
+                                        }
+                                        mediaPlayer.prepareAsync()
+                                        for (i in 0..(mediaTime/1000)) {
+                                            if (currentMedia != CURRENT_CUSTOM) {
+                                                Log.d("CustomVideo", "Stopping Main Loop")
+                                                break@mainLoop
+                                            }
+                                            delay(1000)
+                                        }
+                                        mediaPlayer.stop()
+                                        mediaPlayer.reset()
+                                    } catch (e: Exception) {
+                                        Log.e("CustomLayout", "Media Player error in $fileName - $e")
+                                        delay(mediaTime)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    private fun clearMediaPlayers() {
+        var released = 0
+        for(player in mediaPlayerList) {
+            try {
+                player.stop()
+                player.release()
+                released += 1
+            } catch (e: Exception) {
+                Log.e("Error releasing player", "$e")
+            }
+
+        }
+        mediaPlayerList.clear()
+        Log.d("CustomLayout", "$released media player stopped and released")
+    }
+
 
     @SuppressLint("SetJavaScriptEnabled", "CheckResult")
     private suspend fun playCustomMediaAsync(layout: LinearLayout, isVertical: Boolean?,
