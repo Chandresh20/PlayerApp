@@ -62,6 +62,8 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
     private var youView : YouTubePlayerView? = null
     private val mediaPlayerList = ArrayList<MediaPlayer>()
     private lateinit var mediaPlayer : MediaPlayer
+    private var totalCustomContent = 0
+    private var customContentFinished = 0
 
     private lateinit var glideHandler: Handler
 
@@ -191,18 +193,23 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 Log.d("CustomLayouts", "${dLayoutObject.layout?.size}")
 
                 var layoutFinished = 0
+                imRunning = true
+                Log.d("CustomRunning", "started")
+
+                totalCustomContent = dLayoutObject.layout?.size ?: 0
+                customContentFinished = 0
                 for (layout in (dLayoutObject.layout ?: emptyList())) {
                     val layoutWidth : Int = (layout.width ?: 0).toInt()
                     val layoutHeight : Int = (layout.height ?: 0).toInt()
                     val layoutX : Int = (layout.x ?: 0).toInt()
                     val layoutY : Int = (layout.y ?: 0).toInt()
 
-                  /*  if (dLayoutObject.isVertical == true) {
-                        layoutWidth = (layout.height ?: 0).toInt()
-                        layoutHeight = (layout.width ?: 0).toInt()
-                        layoutX = (layout.y ?: 0).toInt()
-                        layoutY = (layout.x ?: 0).toInt()
-                    }  */
+                    /*  if (dLayoutObject.isVertical == true) {
+                          layoutWidth = (layout.height ?: 0).toInt()
+                          layoutHeight = (layout.width ?: 0).toInt()
+                          layoutX = (layout.y ?: 0).toInt()
+                          layoutY = (layout.x ?: 0).toInt()
+                      }  */
                     val linearLayout = LinearLayout(ctx)
                     linearLayout.layoutParams = ConstraintLayout.LayoutParams(
                         (layoutWidth * wMulti).toInt(), (layoutHeight * hMulti).toInt()).apply {
@@ -221,21 +228,10 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     youView = null
                     CoroutineScope(Dispatchers.Main).launch {
                         imRunning = true
-                   /*     if (layout.repeat == true) {
-                            while (currentMedia == CURRENT_CUSTOM) {
-                                playCustomMediaAsync(linearLayout, dLayoutObject.isVertical, layout.media ?: emptyList()).await()
-                            }
-                        } else {
-                            playCustomMediaAsync(linearLayout, dLayoutObject.isVertical,layout.media ?: emptyList()).await()
-                        }
-                        layoutFinished += 1
-                        if (layoutFinished >= (dLayoutObject.layout?.size ?: 0)) {
-                            imRunning = false
-                            Log.d("CustomLayout", "all Finished")
-                        } */
                         // with new method assuming looping to be always true
                         playCustomMedia2Async(linearLayout, layout.media ?: emptyList()).await()
-                        imRunning = false
+                        Log.d("CustomRunning", "one finished")
+                        customContentFinished += 1
                     }
                 }
                 Log.d("CustomLayout", "All layout set for new Method")
@@ -253,6 +249,10 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     proBar.visibility = View.VISIBLE
                     while (imRunning) {
                         Log.d("ImRunning", "Waiting for current media to stop")
+                        Log.d("ImRunning", "customContentFinished : $customContentFinished / $totalCustomContent")
+                        if (totalCustomContent > 0 && (totalCustomContent == customContentFinished)) {
+                            imRunning = false
+                        }
                         delay(500)
                     }
                     clearMediaPlayers()
@@ -637,7 +637,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     layout.addView(textureView)
                     mediaPlayerList.add(mediaPlayer)
                     val bitmapHasMap = HashMap<String, Bitmap>()
-                    mainLoop@ while(true) {
+                    mainLoop@ while(currentMedia == CURRENT_CUSTOM) {
                         for (media in mediaList) {
                             val fileName = media.fileName
                             val mediaTime = (media.timeInSeconds?.toLong() ?: 10000L) * 1000
@@ -719,6 +719,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                             }
                         }
                     }
+                    Log.d("CustomLayout", "Out from the main loop")
                 }
             }
         }
