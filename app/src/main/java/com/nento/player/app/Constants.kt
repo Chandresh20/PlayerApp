@@ -7,8 +7,8 @@ class Constants {
         const val CONNECTION_TIMEOUT = 20L
         const val READ_TIMEOUT = 20L
         const val WRITE_TIMEOUT = 20L
-   //     const val BASE_URL = "https://react.tjcg.in/"
-        const val BASE_URL = "https://signage.mycircle.net/"
+        const val BASE_URL = "https://react.tjcg.in/"
+   //     const val BASE_URL = "https://signage.mycircle.net/"
    //     const val youtubeAPIKey = "AIzaSyAjLyNPg4JkdphMYdq5EiPuJY3oazR7BbA"
  //       const val youtubeAPIKey = "1234"
         const val TEMPLATE_NAME ="template"
@@ -101,6 +101,6 @@ class Constants {
         const val autoRestartTime = 3600000L
  //       const val maxImageWidth = 3999
         const val APP_VERSION_CODE = 33
-        const val APP_VERSION_NAME = "2.0.1 beta33Live"
+        const val APP_VERSION_NAME = "2.0.1 beta33.1React"
     }
 }

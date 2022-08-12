@@ -1009,8 +1009,15 @@ class MainActivity : AppCompatActivity() {
                 }
                 FragmentMedia.PLAY_TYPE_VIDEO -> {
                     Log.d("ScreenPLay", "Video")
-                    val bMap1 = Bitmap.createBitmap(playlistVideView.width,
-                        playlistVideView.height, Bitmap.Config.ARGB_8888)
+                    val bMap = FragmentMedia.playlistTextureView?.bitmap
+                    if (bMap != null) {
+                        val aspectRation : Float = bMap.width.toFloat() / bMap.height
+                        val reqWidth = 400
+                        val scaledMap = Bitmap.createScaledBitmap(bMap, reqWidth, (reqWidth / aspectRation).toInt(), false)
+                        val saveOutputStream = saveFile.outputStream()
+                        scaledMap.compress(Bitmap.CompressFormat.JPEG, 100, saveOutputStream)
+                        saveOutputStream.close()
+                    }
                  /*   val handlerThread = HandlerThread("PixelCopier")
                     handlerThread.start()
                     PixelCopy.request(playlistVideView, bMap1, {
