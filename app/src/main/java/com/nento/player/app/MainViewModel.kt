@@ -8,4 +8,5 @@ class MainViewModel : ViewModel() {
     val isScreenPaired = MutableLiveData(false)
     val isOffline = MutableLiveData(false)
     val isIdHidden = MutableLiveData(false)
+    val macAddress = MutableLiveData("-")
 }

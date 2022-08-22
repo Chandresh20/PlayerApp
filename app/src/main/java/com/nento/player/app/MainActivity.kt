@@ -5,7 +5,6 @@ import android.app.ActivityManager
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.*
-import android.content.pm.ActivityInfo
 import android.hardware.display.DisplayManager
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
@@ -31,6 +30,7 @@ import java.net.URL
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.*
+import android.net.wifi.WifiManager
 import android.os.*
 import android.provider.MediaStore
 import android.view.*
@@ -43,12 +43,15 @@ import androidx.core.view.drawToBitmap
 import com.nento.player.app.Constants.Companion.onSplashScreen
 import com.nento.player.app.fragment.FragmentMedia
 import io.sentry.Sentry
+import io.sentry.SentryLevel
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import java.lang.Runnable
+import java.net.NetworkInterface
+import java.util.*
 import java.util.concurrent.TimeUnit
 import javax.net.ssl.HttpsURLConnection
 import kotlin.system.exitProcess
@@ -98,6 +101,7 @@ class MainActivity : AppCompatActivity() {
   //      sendToSentry("Testing sentry")
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         getDeviceMemory()
+        getMacAddressRooted()
         if (Build.VERSION.SDK_INT >= 30) {
             window.decorView.windowInsetsController
                 ?.hide(
@@ -1343,6 +1347,29 @@ class MainActivity : AppCompatActivity() {
             val arm = applicationContext.getSystemService(ALARM_SERVICE) as AlarmManager
             arm.set(AlarmManager.RTC, System.currentTimeMillis() + 5000, pIntent)
             byPassMaximize = true
+        }
+    }
+
+    private fun getMacAddressRooted() {
+        // turn wifi on if off (for lower than android 10)
+        val wifiManager = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
+        wifiManager.isWifiEnabled = true
+        val pathToDir = "/sys/class/net/"
+        val netFaces = Collections.list(NetworkInterface.getNetworkInterfaces())
+        for (netface in netFaces) {
+            if (netface.name.lowercase().contains("wlan0")) {
+                try {
+                    val addressFile = File(pathToDir, "${netface.name}/address")
+                    Log.d("MacAddress", "Trying to access $addressFile")
+                    mainViewModel.macAddress.value = addressFile.readText()
+                    Log.d("MacAddress", "Found ${mainViewModel.macAddress.value}")
+                } catch (e:Exception) {
+                    Sentry.captureMessage("MacAddress : $e", SentryLevel.WARNING)
+                    Log.e("MacAddress", e.toString())
+                }
+            } else {
+                Log.e("MacAddress", "${netface.name} skipping")
+            }
         }
     }
 }

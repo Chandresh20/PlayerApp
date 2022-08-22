@@ -164,16 +164,25 @@ class MainScreenFragment : Fragment() {
                 binding.pairedText.visibility = View.GONE
             }
         }
+        MainActivity.mainViewModel.macAddress.observe(viewLifecycleOwner) { mac ->
+            binding.macAddressText.text = mac
+        }
         MainActivity.mainViewModel.isOffline.observe(viewLifecycleOwner) { offline ->
             if (!offline) {
-                if (MainActivity.mainViewModel.isScreenPaired.value == true) {
+                binding.macAddressText.visibility = View.GONE
+             /*   if (MainActivity.mainViewModel.isScreenPaired.value == true) {
                     binding.pairedText.visibility = View.VISIBLE
                     blinkHandler.post(blinkRunnable)
                 }
+                Log.d("ScreenOffline", "Showing mac")
+                binding.macAddressText.text = Constants.macAddress
+                binding.macAddressText.visibility = View.VISIBLE  */
             } else {
-                blinkHandler.removeCallbacks(blinkRunnable)
+                binding.macAddressText.visibility = View.VISIBLE
+            /*    blinkHandler.removeCallbacks(blinkRunnable)
                 blinkHandler.removeCallbacks(blinkRunnable2)
                 binding.pairedText.visibility = View.GONE
+                binding.macAddressText.visibility = View.GONE  */
             }
         }
     }
