@@ -1,6 +1,5 @@
 package com.nento.player.app.api
 
-import com.nento.player.app.responses.ContentResponse
 import com.nento.player.app.responses.UpdateResponse
 import okhttp3.MultipartBody
 import retrofit2.Call
@@ -8,12 +7,12 @@ import retrofit2.http.*
 
 interface  Apis {
 
-    @PUT("api/players/register-info")
+  /*  @PUT("api/players/register-info")
     fun registerInfo(@Body infoBodyJson:String, @Header("content-type") contentType: String)
         : Call<String>
 
     @GET("api/player-and-contents")
-    fun getPlayersContent(@Query("scrn_no") screenNo: Int) : Call<ContentResponse>
+    fun getPlayersContent(@Query("screen_no") screenNo: Int) : Call<ContentResponse>  */
 
     @POST("api/checkAppUpdate")
     fun checkForUpdate(@Body versionInfoJson: String,

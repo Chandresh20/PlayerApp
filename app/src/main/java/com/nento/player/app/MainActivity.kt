@@ -795,6 +795,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private val rotateScreenListener = Emitter.Listener { args ->
+        if (Constants.verticalLayout) {
+            messageHandler.obtainMessage(0,
+                "Manual rotation doesn't support this layout, please change the layout").sendToTarget()
+            messageHandler.postDelayed({
+                messageHandler.obtainMessage(0, "").sendToTarget()
+            }, 10000)
+            return@Listener
+        }
         val msg = args[0]
         Log.d("RotationUpdate", "$msg")
     /*    Constants.orientationVertical = msg.toString() == "true"
@@ -1197,6 +1205,8 @@ class MainActivity : AppCompatActivity() {
         if (!onPauseCalledOnce) {
             onPauseCalledOnce = true
         } else {
+            mSocket.disconnect()
+            Log.d("onPause", "Socket Disconnected")
             val restartTime = if (pauseForWifi) 120000 else 30000
             pauseForWifi = false
             val intent = Intent(this, TVActivity::class.java)

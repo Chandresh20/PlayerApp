@@ -199,17 +199,18 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 totalCustomContent = dLayoutObject.layout?.size ?: 0
                 customContentFinished = 0
                 for (layout in (dLayoutObject.layout ?: emptyList())) {
-                    val layoutWidth : Int = (layout.width ?: 0).toInt()
-                    val layoutHeight : Int = (layout.height ?: 0).toInt()
-                    val layoutX : Int = (layout.x ?: 0).toInt()
-                    val layoutY : Int = (layout.y ?: 0).toInt()
+                    var layoutWidth : Int = (layout.width ?: 0).toInt()
+                    var layoutHeight : Int = (layout.height ?: 0).toInt()
+                    var layoutX : Int = (layout.x ?: 0).toInt()
+                    var layoutY : Int = (layout.y ?: 0).toInt()
 
-                    /*  if (dLayoutObject.isVertical == true) {
+                      if (dLayoutObject.isVertical == true) {
+                          Constants.verticalLayout = true
                           layoutWidth = (layout.height ?: 0).toInt()
                           layoutHeight = (layout.width ?: 0).toInt()
                           layoutX = (layout.y ?: 0).toInt()
                           layoutY = (layout.x ?: 0).toInt()
-                      }  */
+                      }
                     val linearLayout = LinearLayout(ctx)
                     linearLayout.layoutParams = ConstraintLayout.LayoutParams(
                         (layoutWidth * wMulti).toInt(), (layoutHeight * hMulti).toInt()).apply {
@@ -229,7 +230,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     CoroutineScope(Dispatchers.Main).launch {
                         imRunning = true
                         // with new method assuming looping to be always true
-                        playCustomMedia2Async(linearLayout, layout.media ?: emptyList()).await()
+                        playCustomMedia2Async(linearLayout, layout.media ?: emptyList(), dLayoutObject.isVertical ?: false).await()
                         Log.d("CustomRunning", "one finished")
                         customContentFinished += 1
                     }
@@ -256,6 +257,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                         delay(500)
                     }
                     clearMediaPlayers()
+                    Constants.verticalLayout = false
                     when(p1?.action) {
                         Constants.NEW_TEMPLATE_READY_BROADCAST -> {
                             currentMedia = CURRENT_TEMPLATE
@@ -404,7 +406,8 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             val pFile = File(MainActivity.storageDir, key)
             if (pFile.exists()) {
                 Log.d("CheckingFile", "$key available")
-                itemArray.add(DisplayItems(key, allRecords.get(key) as Int))
+                itemArray.add(DisplayItems(key))
+                 //   , allRecords.get(key) as Int))
             } else {
                 Log.e("CheckingFile", "$key not available")
             }
@@ -467,7 +470,9 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
         }
 
 
-    private suspend fun playCustomMedia2Async(layout: LinearLayout, mediaList: List<CustomLayoutObject.MediaInfo>) =
+    private suspend fun playCustomMedia2Async(
+        layout: LinearLayout,
+        mediaList: List<CustomLayoutObject.MediaInfo>, isVertical: Boolean) =
         coroutineScope {
             async(Dispatchers.Main) {
                 if (mediaList.size == 1) {
@@ -482,7 +487,12 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                 val imageFile = File(MainActivity.storageDir, "${Constants.CUSTOM_CONTENT_DIR}/$fileName")
                                 val imageStrm = imageFile.inputStream()
                                 val imageMap = BitmapFactory.decodeStream(imageStrm)
-                                if (Constants.rotationAngel > 0) {
+                                if (isVertical) {
+                                    val matrix = Matrix()
+                                    matrix.postRotate(-90f)
+                                    val rotateMap = Bitmap.createBitmap(imageMap, 0, 0, imageMap.width, imageMap.height, matrix, false)
+                                    imageView.setImageBitmap(blurImage(rotateMap, true))
+                                } else if (Constants.rotationAngel > 0) {
                                     val matrix = Matrix()
                                     matrix.postRotate(Constants.rotationAngel)
                                     val rotateMap = Bitmap.createBitmap(imageMap, 0, 0, imageMap.width, imageMap.height, matrix, false)
@@ -541,7 +551,11 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                             }
                             try {
                                 layout.addView(textureView)
-                                textureView.rotation = Constants.rotationAngel
+                                textureView.rotation = if (isVertical) {
+                                    -90f
+                                } else {
+                                    Constants.rotationAngel
+                                }
                                 val videoFile = File(MainActivity.storageDir, "${Constants.CUSTOM_CONTENT_DIR}/$fileName")
                                 mediaPlayer.setDataSource(videoFile.toString())
                                 mediaPlayer.setVolume(0f,0f)
@@ -559,7 +573,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                     }
                                 }
                                 mediaPlayer.setOnPreparedListener {
-                                    Log.d("CustomVideo", "MediaPlayer Set")
+                                    Log.d("CustomVideo", "MediaPlayer Set for $videoFile")
                                     it.start()
                                     Log.d("MediaPlayer11","${mediaPlayer.duration}")
                                     if (mediaPlayer.duration > mediaTime) {
@@ -621,7 +635,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
 
                             override fun onSurfaceTextureUpdated(p0: SurfaceTexture) { }
                         }
-                    textureView.layoutParams = if (Constants.rotationAngel == 90f || Constants.rotationAngel == 270f) {
+                    textureView.layoutParams = if (isVertical || Constants.rotationAngel == 90f || Constants.rotationAngel == 270f) {
                         LinearLayout.LayoutParams(
                             layout.height,
                             layout.width
@@ -655,7 +669,12 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                             Log.d("CustomLayout", "$fileName creating bitmap")
                                             val imageStrm = imageFile.inputStream()
                                             val imageMap = BitmapFactory.decodeStream(imageStrm)
-                                            val useMap = if (Constants.rotationAngel > 0) {
+                                            val useMap = if (isVertical) {
+                                                val matrix = Matrix()
+                                                matrix.postRotate(-90f)
+                                                val rotateMap = Bitmap.createBitmap(imageMap, 0, 0, imageMap.width, imageMap.height, matrix, false)
+                                                blurImage(rotateMap, true)
+                                            } else if (Constants.rotationAngel > 0) {
                                                 val matrix = Matrix()
                                                 matrix.postRotate(Constants.rotationAngel)
                                                 val rotateMap = Bitmap.createBitmap(imageMap, 0, 0, imageMap.width, imageMap.height, matrix, false)
@@ -688,13 +707,17 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                             imageView.visibility = View.GONE
                                             textureView.visibility = View.VISIBLE
                                         }, 1000)
-                                        textureView.rotation = Constants.rotationAngel
+                                        textureView.rotation = if (isVertical) {
+                                            -90f
+                                        } else {
+                                            Constants.rotationAngel
+                                        }
                                         val videoFile = File(MainActivity.storageDir, "${Constants.CUSTOM_CONTENT_DIR}/$fileName")
                                         mediaPlayer.setDataSource(videoFile.toString())
                                         mediaPlayer.setVolume(0f,0f)
                                         mediaPlayer.isLooping = true
                                         mediaPlayer.setOnPreparedListener {
-                                            Log.d("CustomVideo", "MediaPlayer Set")
+                                            Log.d("CustomVideo", "MediaPlayer Set for $videoFile")
                                             it.start()
                                         }
                                         mediaPlayer.setOnCompletionListener {
@@ -1029,7 +1052,8 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
         return outputBitmap
     }
 
-    class DisplayItems(val name: String, val duration: Int, var compressedImage: Bitmap? = null)
+    class DisplayItems(val name: String)
+ //   , val duration: Int, var compressedImage: Bitmap? = null)
 
  /*   override fun onDestroy() {
         Constants.inMediaScreen = false
