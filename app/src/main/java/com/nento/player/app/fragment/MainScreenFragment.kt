@@ -8,6 +8,7 @@ import android.content.IntentFilter
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -96,10 +97,10 @@ class MainScreenFragment : Fragment() {
             (ctx as MainActivity).finish()
             false
         }  */
-    /*    binding.setWifiButton.setOnClickListener {
+        binding.setWifiButton.setOnClickListener {
             MainActivity.pauseForWifi = true
             startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
-        }  */
+        }
         val updateReceiver = object : BroadcastReceiver() {
             override fun onReceive(p0: Context?, p1: Intent?) {
                 try {
@@ -170,6 +171,7 @@ class MainScreenFragment : Fragment() {
         MainActivity.mainViewModel.isOffline.observe(viewLifecycleOwner) { offline ->
             if (!offline) {
                 binding.macAddressText.visibility = View.GONE
+                binding.setWifiButton.visibility = View.GONE
              /*   if (MainActivity.mainViewModel.isScreenPaired.value == true) {
                     binding.pairedText.visibility = View.VISIBLE
                     blinkHandler.post(blinkRunnable)
@@ -179,6 +181,7 @@ class MainScreenFragment : Fragment() {
                 binding.macAddressText.visibility = View.VISIBLE  */
             } else {
                 binding.macAddressText.visibility = View.VISIBLE
+                binding.setWifiButton.visibility = View.VISIBLE
             /*    blinkHandler.removeCallbacks(blinkRunnable)
                 blinkHandler.removeCallbacks(blinkRunnable2)
                 binding.pairedText.visibility = View.GONE

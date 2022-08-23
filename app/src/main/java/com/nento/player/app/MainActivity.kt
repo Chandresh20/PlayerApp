@@ -231,9 +231,10 @@ class MainActivity : AppCompatActivity() {
         }, 3600000)
     }
 
+    @SuppressLint("UnspecifiedImmutableFlag")
     private fun restartAppForEveryOneHour () {
         val intent = Intent(applicationContext, MainActivity::class.java)
-        val mPendingIntentId: Int = 10000
+        val mPendingIntentId = 10000
         val mPendingIntent = PendingIntent.getActivity(
             applicationContext,
             mPendingIntentId,
@@ -242,7 +243,7 @@ class MainActivity : AppCompatActivity() {
         )
         val mgr = applicationContext.getSystemService(ALARM_SERVICE) as AlarmManager
         mgr[AlarmManager.RTC, System.currentTimeMillis() + 100] = mPendingIntent
-        System.exit(0)
+        exitProcess(0)
     }
 
     private fun loadAssignedContent() {
@@ -763,7 +764,7 @@ class MainActivity : AppCompatActivity() {
             Constants.CONTENT_ASSIGNED_PLAYLIST -> {
                 val playListDir = File(storageDir, Constants.PLAYLIST_DIR_NAME)
                 val files = playListDir.listFiles()
-                for (file in files) {
+                for (file in (files ?: emptyArray())) {
                     Log.d("MediaUpdate", "${file.name} && $fileName")
                     if (file.name == fileName) {
                         Log.d("MediaUpdate", "Downloading image")
@@ -814,7 +815,7 @@ class MainActivity : AppCompatActivity() {
    //     loadAssignedContent(false)
     }
 
-    private val toggleScreenNumberListener = Emitter.Listener { args ->
+    private val toggleScreenNumberListener = Emitter.Listener {
         val hideScreenNumber = mainViewModel.isIdHidden.value ?: false
         mainViewModel.isIdHidden.postValue(!hideScreenNumber)
         sharedPreferences.edit().apply {
@@ -993,7 +994,7 @@ class MainActivity : AppCompatActivity() {
 
     @RequiresApi(Build.VERSION_CODES.N)
     private fun captureScreenNow() {
-        val playlistVideView = FragmentMedia.playlistTextureView ?: return
+   //     val playlistVideView = FragmentMedia.playlistTextureView ?: return
         val view: View = window.decorView
         val saveFile = File(storageDir, "${Constants.playerId}.jpg")
         try {
@@ -1274,9 +1275,9 @@ class MainActivity : AppCompatActivity() {
         return false
     }  */
 
-    private fun setHourRefresh() {
+  /*  private fun setHourRefresh() {
         autoRestartHandler.postDelayed(autoRestartRunnable, Constants.autoRestartTime)
-    }
+    }  */
 
     private fun animateOfflineIcon() {
         blinkRunnable3 = kotlinx.coroutines.Runnable {
@@ -1306,7 +1307,7 @@ class MainActivity : AppCompatActivity() {
         lateinit var mainViewModel: MainViewModel
         var displayWidth : Int = 0
         var displayHeight : Int = 0
-        lateinit var rotationHandler : Handler
+
         lateinit var updateHandler2 : Handler
         lateinit var mSocket : Socket
         var byPassMaximize = false
