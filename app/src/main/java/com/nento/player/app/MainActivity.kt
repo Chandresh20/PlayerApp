@@ -92,7 +92,7 @@ class MainActivity : AppCompatActivity() {
         msgText = findViewById(R.id.messageText)
         offlineIcon = findViewById(R.id.offlineIcon)
         countDownLayout = findViewById(R.id.countDownLayout)
-        Thread.setDefaultUncaughtExceptionHandler(ExceptionHandler(this))
+   //     Thread.setDefaultUncaughtExceptionHandler(ExceptionHandler(this))
         storageDir = applicationContext.getExternalFilesDir("Contents")!!
         cancelRestartAlarm()
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
@@ -297,13 +297,13 @@ class MainActivity : AppCompatActivity() {
             }
             val downFile = downloadTemplateAsync(url.toString()).await()
             if (downFile != null) {
-                val originalMap = BitmapFactory.decodeFile(downFile.toString())
+            //    val originalMap = BitmapFactory.decodeFile(downFile.toString())
                 try {
-                    val newOutput : OutputStream
+               /*     val newOutput : OutputStream
                     downFile.delete()
                     downFile.createNewFile()
                     newOutput = downFile.outputStream()
-                    originalMap.compress(Bitmap.CompressFormat.JPEG, 100, newOutput)
+                    originalMap.compress(Bitmap.CompressFormat.JPEG, 100, newOutput)  */
                     if (onSplashScreen) {
                         sendBroadcast(Intent(Constants.START_MEDIA_BROADCAST))
                     }
@@ -615,11 +615,11 @@ class MainActivity : AppCompatActivity() {
                         }
                         updateHandler2.obtainMessage(0, "100% ($itemCount/$totalCount)").sendToTarget()
                         Log.d("Writing File", "${urlInfo.name} : $totalWrite")
-                        val name = urlInfo.name ?: "NA"
+                    /*    val name = urlInfo.name ?: "NA"
                         if (name.contains(".jpg") || name.contains(".png") || name.contains(".jpeg") ||
                             name.contains(".gif")) {
                             compressImageFileAsync(fileName).await()
-                        }
+                        }  */
                     }
                     //TODO ("move files to customLayout")
                     val customDir = File(storageDir, Constants.CUSTOM_CONTENT_DIR)
@@ -645,7 +645,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-    private suspend fun compressImageFileAsync(file : File) =
+ /*   private suspend fun compressImageFileAsync(file : File) =
         coroutineScope {
             async(Dispatchers.IO) {
                 Log.d("compressing", file.toString())
@@ -662,7 +662,7 @@ class MainActivity : AppCompatActivity() {
                     Log.e("compressing", "$file - failed $e")
                 }
             }
-        }
+        }  */
 
     private val closeListener = Emitter.Listener {
         Log.d("Socket", "CloseApp")
@@ -1371,7 +1371,7 @@ class MainActivity : AppCompatActivity() {
     private fun getMacAddressRooted() {
         // turn wifi on if off (for lower than android 10)
         val wifiManager = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
-        wifiManager.isWifiEnabled = true
+    //    wifiManager.isWifiEnabled = true
         val pathToDir = "/sys/class/net/"
         val netFaces = Collections.list(NetworkInterface.getNetworkInterfaces())
         for (netface in netFaces) {

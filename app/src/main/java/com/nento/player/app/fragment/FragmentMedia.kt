@@ -1,6 +1,7 @@
 package com.nento.player.app.fragment
 
 import android.annotation.SuppressLint
+import android.app.ActionBar
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -113,7 +114,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 .skipMemoryCache(true)
             if (Constants.rotationAngel > 0f) {
                 glide.override(MainActivity.displayHeight, MainActivity.displayWidth)
-                glide.transform(RotateTransformation())
+                glide.transform(RotateTransformation(Constants.rotationAngel))
             } else {
                 glide.override(MainActivity.displayWidth, MainActivity.displayHeight)
             }
@@ -470,6 +471,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
         }
 
 
+    @SuppressLint("CheckResult")
     private suspend fun playCustomMedia2Async(
         layout: LinearLayout,
         mediaList: List<CustomLayoutObject.MediaInfo>, isVertical: Boolean) =
@@ -483,7 +485,26 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                         Constants.MEDIA_IMAGE -> {
                             val imageView = ImageView(ctx)
                             imageView.scaleType = ImageView.ScaleType.FIT_XY
+                            imageView.layoutParams =
+                                LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.MATCH_PARENT)
+                            layout.addView(imageView)
                             try {
+                                val imageFile = File(MainActivity.storageDir, "${Constants.CUSTOM_CONTENT_DIR}/$fileName")
+                                val glide = Glide.with(ctx)
+                                    .load(imageFile)
+                                    .diskCacheStrategy(DiskCacheStrategy.NONE)
+                                    .override(layout.width,layout.height)
+                                if (isVertical) {
+                                    glide.transform(RotateTransformation(-90f))
+                                } else if (Constants.rotationAngel > 0f) {
+                                    glide.transform(RotateTransformation(Constants.rotationAngel))
+                                }
+                                glide.into(imageView)
+                            } catch (e: Exception) {
+                                Log.e("CustomView", "$e at $fileName")
+                            }
+
+                         /*   try {
                                 val imageFile = File(MainActivity.storageDir, "${Constants.CUSTOM_CONTENT_DIR}/$fileName")
                                 val imageStrm = imageFile.inputStream()
                                 val imageMap = BitmapFactory.decodeStream(imageStrm)
@@ -505,7 +526,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                 imageStrm.close()
                             } catch (e: Exception) {
                                 Log.e("CustomView", "$e at $fileName")
-                            }
+                            } */
                         }
                         Constants.MEDIA_VIDEO -> {
                             val textureView = TextureView(ctx)
@@ -605,7 +626,13 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     }
                 } else {
                     val imageView = ImageView(ctx)
+                    val imageView2 = ImageView(ctx)
                     imageView.scaleType = ImageView.ScaleType.FIT_XY
+                    imageView2.scaleType = ImageView.ScaleType.FIT_XY
+                    imageView.layoutParams =
+                        LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.MATCH_PARENT)
+                    imageView2.layoutParams =
+                        LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.MATCH_PARENT)
                     val textureView = TextureView(ctx)
                     val mediaPlayer = MediaPlayer()
                     textureView.surfaceTextureListener =
@@ -648,7 +675,9 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                             layout.width, layout.height)
                     }
                     layout.addView(imageView)
+                    layout.addView(imageView2)
                     layout.addView(textureView)
+                    var evenImage = false
                     mediaPlayerList.add(mediaPlayer)
                     val bitmapHasMap = HashMap<String, Bitmap>()
                     mainLoop@ while(currentMedia == CURRENT_CUSTOM) {
@@ -659,12 +688,34 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                 Constants.MEDIA_IMAGE -> {
                                     try {
                                         textureView.visibility = View.GONE
-                                        imageView.visibility = View.VISIBLE
                                         val imageFile = File(
                                             MainActivity.storageDir,
                                             "${Constants.CUSTOM_CONTENT_DIR}/$fileName"
                                         )
-                                        val alreadyBMap = bitmapHasMap.get(fileName)
+                                        val glide = Glide.with(ctx)
+                                            .load(imageFile)
+                                            .diskCacheStrategy(DiskCacheStrategy.NONE)
+                                            .override(layout.width,layout.height)
+                                        if (isVertical) {
+                                            glide.transform(RotateTransformation(-90f))
+                                        } else if (Constants.rotationAngel > 0f) {
+                                            glide.transform(RotateTransformation(Constants.rotationAngel))
+                                        }
+                                        if (evenImage) {
+                                            glide.into(imageView)
+                                            evenImage = false
+                                            delay(500)
+                                            imageView.visibility = View.VISIBLE
+                                            imageView2.visibility = View.GONE
+                                        } else {
+                                            glide.into(imageView2)
+                                            evenImage = true
+                                            delay(500)
+                                            imageView2.visibility = View.VISIBLE
+                                            imageView.visibility = View.GONE
+                                        }
+
+                                     /*   val alreadyBMap = bitmapHasMap.get(fileName)
                                         if (alreadyBMap == null) {
                                             Log.d("CustomLayout", "$fileName creating bitmap")
                                             val imageStrm = imageFile.inputStream()
@@ -688,7 +739,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                         } else {
                                             Log.d("CustomLayout", "$fileName using already available bitmap")
                                             imageView.setImageBitmap(alreadyBMap)
-                                        }
+                                        }  */
                                         for (i in 0..(mediaTime/1000)) {
                                             if (currentMedia != CURRENT_CUSTOM) {
                                                 Log.d("CustomLayout", "Stopping main loop")
@@ -705,6 +756,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                     try {
                                         videoHandler.postDelayed( {
                                             imageView.visibility = View.GONE
+                                            imageView2.visibility = View.GONE
                                             textureView.visibility = View.VISIBLE
                                         }, 1000)
                                         textureView.rotation = if (isVertical) {
@@ -1060,10 +1112,10 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
         super.onDestroy()
     } */
 
-    class RotateTransformation : BitmapTransformation() {
+    class RotateTransformation(val rotationAngle : Float) : BitmapTransformation() {
 
         override fun updateDiskCacheKey(messageDigest: MessageDigest) {
-            messageDigest.update(("rotate${Constants.rotationAngel}").toByte())
+            messageDigest.update(("rotate$rotationAngle").toByte())
         }
 
         override fun transform(
@@ -1073,7 +1125,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             outHeight: Int
         ): Bitmap {
             val matrix = Matrix()
-            matrix.postRotate(Constants.rotationAngel)
+            matrix.postRotate(rotationAngle)
             return Bitmap.createBitmap(toTransform, 0, 0, toTransform.width, toTransform.height, matrix, true)
         }
 
