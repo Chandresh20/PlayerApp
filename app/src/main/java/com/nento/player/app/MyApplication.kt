@@ -16,11 +16,7 @@ class MyApplication : Application(), LifecycleObserver {
     private  val TAG = "MyApplication"
     override fun onCreate() {
         super.onCreate()
-        // registerActivityLifecycleCallbacks(MyLifecycleHandler())
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
-  /*      Instabug.Builder(this, "dbc92e9266cbed2794218a0a521d555c")
-            .setInvocationEvents(InstabugInvocationEvent.SHAKE, InstabugInvocationEvent.SCREENSHOT)
-            .build()  */
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)

@@ -53,8 +53,6 @@ class MainScreenFragment : Fragment() {
         }
         var countDown = 4
         binding.resetBtn.setOnTouchListener { _, motionEvent ->
-
-       //     var touchStartTime = 0L
             val touchHandler = Handler(Looper.getMainLooper())
             val touchRunnable = object : Runnable {
                 override fun run() {
@@ -79,24 +77,6 @@ class MainScreenFragment : Fragment() {
             }
             false
         }
-    /*    binding.resetBtn.setOnLongClickListener {
-            // send reset info to server
-            MainActivity.resetApp(ctx.applicationContext)
-            val resetJson = JSONObject()
-            resetJson.put("screenNumber", Constants.screenID)
-            resetJson.put("type", "reset_screen_app")
-            ApiService.apiService.sendResetCommandToServer(resetJson.toString(),
-                "application/json").enqueue(object : Callback<String> {
-                override fun onResponse(call: Call<String>, response: Response<String>) {
-                    Log.d("ResetCommand", "${response.body()}")
-                }
-                override fun onFailure(call: Call<String>, t: Throwable) {
-                    Log.e("ResetCommand", "${t.message}")
-                }
-            })
-            (ctx as MainActivity).finish()
-            false
-        }  */
         binding.setWifiButton.setOnClickListener {
             MainActivity.pauseForWifi = true
             startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
@@ -122,13 +102,6 @@ class MainScreenFragment : Fragment() {
             binding.pairedText.animate().alpha(1f).duration = blinkDuration
             blinkHandler.postDelayed(blinkRunnable, blinkDuration)
         }
-    /*    MainActivity.mainViewModel.isOffline.observe(viewLifecycleOwner) { offline ->
-            if (offline) {
-                binding.setWifiButton.visibility = View.VISIBLE
-            } else {
-                binding.setWifiButton.visibility = View.GONE
-            }
-        }  */
         return binding.root
     }
 
@@ -172,20 +145,9 @@ class MainScreenFragment : Fragment() {
             if (!offline) {
                 binding.macAddressText.visibility = View.GONE
                 binding.setWifiButton.visibility = View.GONE
-             /*   if (MainActivity.mainViewModel.isScreenPaired.value == true) {
-                    binding.pairedText.visibility = View.VISIBLE
-                    blinkHandler.post(blinkRunnable)
-                }
-                Log.d("ScreenOffline", "Showing mac")
-                binding.macAddressText.text = Constants.macAddress
-                binding.macAddressText.visibility = View.VISIBLE  */
             } else {
                 binding.macAddressText.visibility = View.VISIBLE
                 binding.setWifiButton.visibility = View.VISIBLE
-            /*    blinkHandler.removeCallbacks(blinkRunnable)
-                blinkHandler.removeCallbacks(blinkRunnable2)
-                binding.pairedText.visibility = View.GONE
-                binding.macAddressText.visibility = View.GONE  */
             }
         }
     }

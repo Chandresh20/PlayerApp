@@ -30,7 +30,6 @@ import java.net.URL
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.*
-import android.net.wifi.WifiManager
 import android.os.*
 import android.provider.MediaStore
 import android.view.*
@@ -83,22 +82,19 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         window?.setFlags(WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
             WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED)
- //       Constants.orientationVertical = sharedPreferences.getBoolean(Constants.PREFS_IS_VERTICAL, false)
         Constants.rotationAngel = sharedPreferences.getFloat(Constants.PREFS_ROTATION_ANGLE, 0f)
         Log.d("OrientationAngle", "${Constants.rotationAngel}")
         mainViewModel = ViewModelProvider(this).get(MainViewModel::class.java)
         mainViewModel.isIdHidden.value = sharedPreferences.getBoolean(Constants.PREFS_IS_ID_HIDDEN, false)
- //       startService(Intent(this, RestartService::class.java))
         msgText = findViewById(R.id.messageText)
         offlineIcon = findViewById(R.id.offlineIcon)
         countDownLayout = findViewById(R.id.countDownLayout)
-   //     Thread.setDefaultUncaughtExceptionHandler(ExceptionHandler(this))
+        Thread.setDefaultUncaughtExceptionHandler(ExceptionHandler(this))
         storageDir = applicationContext.getExternalFilesDir("Contents")!!
         cancelRestartAlarm()
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             onPauseCalledOnce = true
         }
-  //      sendToSentry("Testing sentry")
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         getDeviceMemory()
         getMacAddressRooted()
@@ -127,15 +123,6 @@ class MainActivity : AppCompatActivity() {
             msgText.text = msg
             true
         }
-    /*    rotationHandler = Handler(mainLooper) {
-            val isVertical = it.obj as Boolean
-            requestedOrientation = if (isVertical) {
-                ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-            } else {
-                ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-            }
-            true
-        } */
         autoRestartHandler = Handler(mainLooper)
         autoRestartRunnable = kotlinx.coroutines.Runnable {
             throw Exception("AutoRestart")
@@ -197,12 +184,6 @@ class MainActivity : AppCompatActivity() {
             takeScreenShotAndSendAsync().await()
         }
         sendDeviceInfo()
-   /*     if (!isServiceRunning(SocketService::class.java)) {
-            startService(Intent(this, SocketService::class.java))
-        } else {
-            Log.d("SocketService", "Already running")
-        }  */
-   //     setHourRefresh()
         CoroutineScope(Dispatchers.Main).launch {
             keepSendHeartBeatAsync().await()
         }
@@ -297,13 +278,7 @@ class MainActivity : AppCompatActivity() {
             }
             val downFile = downloadTemplateAsync(url.toString()).await()
             if (downFile != null) {
-            //    val originalMap = BitmapFactory.decodeFile(downFile.toString())
                 try {
-               /*     val newOutput : OutputStream
-                    downFile.delete()
-                    downFile.createNewFile()
-                    newOutput = downFile.outputStream()
-                    originalMap.compress(Bitmap.CompressFormat.JPEG, 100, newOutput)  */
                     if (onSplashScreen) {
                         sendBroadcast(Intent(Constants.START_MEDIA_BROADCAST))
                     }
@@ -615,11 +590,6 @@ class MainActivity : AppCompatActivity() {
                         }
                         updateHandler2.obtainMessage(0, "100% ($itemCount/$totalCount)").sendToTarget()
                         Log.d("Writing File", "${urlInfo.name} : $totalWrite")
-                    /*    val name = urlInfo.name ?: "NA"
-                        if (name.contains(".jpg") || name.contains(".png") || name.contains(".jpeg") ||
-                            name.contains(".gif")) {
-                            compressImageFileAsync(fileName).await()
-                        }  */
                     }
                     //TODO ("move files to customLayout")
                     val customDir = File(storageDir, Constants.CUSTOM_CONTENT_DIR)
@@ -805,10 +775,6 @@ class MainActivity : AppCompatActivity() {
         }
         val msg = args[0]
         Log.d("RotationUpdate", "$msg")
-    /*    Constants.orientationVertical = msg.toString() == "true"
-        sharedPreferences.edit().apply {
-            putBoolean(Constants.PREFS_IS_VERTICAL, Constants.orientationVertical)
-        }.apply()  */
         Constants.rotationAngel += 90f
         if (Constants.rotationAngel >= 360f) {
             Constants.rotationAngel = 0f
@@ -820,7 +786,6 @@ class MainActivity : AppCompatActivity() {
             broadcastContent(assignedContent)
             Log.d("RotationUpdate", "Content Broadcast")
         }
-   //     loadAssignedContent(false)
     }
 
     private val toggleScreenNumberListener = Emitter.Listener {
@@ -1002,7 +967,6 @@ class MainActivity : AppCompatActivity() {
 
     @RequiresApi(Build.VERSION_CODES.N)
     private fun captureScreenNow() {
-   //     val playlistVideView = FragmentMedia.playlistTextureView ?: return
         val view: View = window.decorView
         val saveFile = File(storageDir, "${Constants.playerId}.jpg")
         try {
@@ -1031,21 +995,6 @@ class MainActivity : AppCompatActivity() {
                         scaledMap.compress(Bitmap.CompressFormat.JPEG, 100, saveOutputStream)
                         saveOutputStream.close()
                     }
-                 /*   val handlerThread = HandlerThread("PixelCopier")
-                    handlerThread.start()
-                    PixelCopy.request(playlistVideView, bMap1, {
-                        if (it == PixelCopy.SUCCESS) {
-                            Log.d("PixelCopy", "Success")
-                            val aspectRation : Float = bMap1.width.toFloat() / bMap1.height
-                            val reqWidth = 400
-                            val scaledMap = Bitmap.createScaledBitmap(bMap1, reqWidth, (reqWidth / aspectRation).toInt(), false)
-                            val saveOutputStream = saveFile.outputStream()
-                            scaledMap.compress(Bitmap.CompressFormat.JPEG, 100, saveOutputStream)
-                            saveOutputStream.close()
-                        } else {
-                            Log.e("PixelCopy", "Failure")
-                        }
-                    }, Handler(handlerThread.looper))  */
                 }
                 FragmentMedia.PLAY_TYPE_LAYOUT -> {
                     Log.d("ScreenPLay", "Layout")
@@ -1275,20 +1224,6 @@ class MainActivity : AppCompatActivity() {
         finishAffinity()
     }
 
- /*   private fun isServiceRunning(serviceClass : Class<SocketService>) : Boolean {
-        val aManager = getSystemService(ACTIVITY_SERVICE) as ActivityManager
-        for (service in aManager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.name == service.service.className) {
-                return true
-            }
-        }
-        return false
-    }  */
-
-  /*  private fun setHourRefresh() {
-        autoRestartHandler.postDelayed(autoRestartRunnable, Constants.autoRestartTime)
-    }  */
-
     private fun animateOfflineIcon() {
         blinkRunnable3 = kotlinx.coroutines.Runnable {
             offlineIcon.animate().alpha(0f).duration = blinkDuration
@@ -1370,7 +1305,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun getMacAddressRooted() {
         // turn wifi on if off (for lower than android 10)
-        val wifiManager = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
+     //   val wifiManager = applicationContext.getSystemService(WIFI_SERVICE) as WifiManager
     //    wifiManager.isWifiEnabled = true
         val pathToDir = "/sys/class/net/"
         val netFaces = Collections.list(NetworkInterface.getNetworkInterfaces())
