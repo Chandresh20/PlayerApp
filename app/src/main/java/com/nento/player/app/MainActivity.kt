@@ -765,14 +765,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private val rotateScreenListener = Emitter.Listener { args ->
-        if (Constants.verticalLayout) {
+     /*   if (Constants.verticalLayout) {
             messageHandler.obtainMessage(0,
                 "Manual rotation doesn't support this layout, please change the layout").sendToTarget()
             messageHandler.postDelayed({
                 messageHandler.obtainMessage(0, "").sendToTarget()
             }, 10000)
             return@Listener
-        }
+        }  */
         val msg = args[0]
         Log.d("RotationUpdate", "$msg")
         Constants.rotationAngel += 90f
@@ -782,6 +782,7 @@ class MainActivity : AppCompatActivity() {
         sharedPreferences.edit().apply {
             putFloat(Constants.PREFS_ROTATION_ANGLE, Constants.rotationAngel)
         }.apply()
+        Log.d("NewRotationValue", "${Constants.rotationAngel}")
         if (!onSplashScreen) {
             broadcastContent(assignedContent)
             Log.d("RotationUpdate", "Content Broadcast")

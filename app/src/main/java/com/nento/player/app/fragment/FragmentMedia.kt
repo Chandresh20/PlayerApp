@@ -166,29 +166,89 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
 
                 totalCustomContent = dLayoutObject.layout?.size ?: 0
                 customContentFinished = 0
+                if (dLayoutObject.isVertical == true) {
+                    if (Constants.rotationAngel == 0f) {
+                        Constants.rotationAngel = 90f
+                    } else if (Constants.rotationAngel == 180f) {
+                        Constants.rotationAngel = 270f
+                    }
+                } else {
+                    if (Constants.rotationAngel == 90f) {
+                        Constants.rotationAngel = 180f
+                    } else if (Constants.rotationAngel == 270f) {
+                        Constants.rotationAngel = 0f
+                    }
+                }
+                Log.d("CustomRotationSet", "${Constants.rotationAngel}")
                 for (layout in (dLayoutObject.layout ?: emptyList())) {
                     var layoutWidth : Int = (layout.width ?: 0).toInt()
                     var layoutHeight : Int = (layout.height ?: 0).toInt()
                     var layoutX : Int = (layout.x ?: 0).toInt()
                     var layoutY : Int = (layout.y ?: 0).toInt()
 
-                      if (dLayoutObject.isVertical == true) {
+                    if (dLayoutObject.isVertical == true) {
                           Constants.verticalLayout = true
                           layoutWidth = (layout.height ?: 0).toInt()
                           layoutHeight = (layout.width ?: 0).toInt()
                           layoutX = (layout.y ?: 0).toInt()
                           layoutY = (layout.x ?: 0).toInt()
-                      }
+                    }
                     val linearLayout = LinearLayout(ctx)
+                    val isVertical : Boolean = dLayoutObject.isVertical ?: false
                     linearLayout.layoutParams = ConstraintLayout.LayoutParams(
                         (layoutWidth * wMulti).toInt(), (layoutHeight * hMulti).toInt()).apply {
-                        startToStart = R.id.customLayout
+                   /*     startToStart = R.id.customLayout
                         topToTop = R.id.customLayout
+
                         marginStart = (layoutX * wMulti).toInt()
                         topMargin = if (dLayoutObject.isVertical == true) {
                             MainActivity.displayHeight - (layoutHeight * hMulti).toInt() - (layoutY * hMulti).toInt()
                         } else {
                             (layoutY * hMulti).toInt()
+                        }    */
+                        when(Constants.rotationAngel) {
+                            0f -> {
+                                if (isVertical) {
+                                    // not available
+                                } else {
+                                    startToStart = R.id.customLayout
+                                    topToTop = R.id.customLayout
+                                    marginStart = (layoutX * wMulti).toInt()
+                                    topMargin = (layoutY * hMulti).toInt()
+                                }
+                            }
+                            90f -> {
+                                if (isVertical) {
+                                    endToEnd = R.id.customLayout
+                                    topToTop = R.id.customLayout
+                                    marginEnd = (layoutX * wMulti).toInt()
+                                    topMargin = (layoutY * hMulti).toInt()
+                                } else {
+                                    // not supported
+                                }
+                            }
+                            180f -> {
+                                if (isVertical) {
+                                    // not supported
+                                } else {
+                                    endToEnd = R.id.customLayout
+                                    bottomToBottom = R.id.customLayout
+                                    marginEnd = (layoutX * wMulti).toInt()
+                                    bottomMargin = (layoutY * hMulti).toInt()
+                                }
+                            }
+                            270f -> {
+                                if (isVertical) {
+                                    startToStart = R.id.customLayout
+                                    topToTop = R.id.customLayout
+
+                                    marginStart = (layoutX * wMulti).toInt()
+                                    topMargin =
+                                        MainActivity.displayHeight - (layoutHeight * hMulti).toInt() - (layoutY * hMulti).toInt()
+                                } else {
+                                    // not supported
+                                }
+                            }
                         }
                     }
                     customLayout.addView(linearLayout)
@@ -459,11 +519,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                     .load(imageFile)
                                     .diskCacheStrategy(DiskCacheStrategy.NONE)
                                     .override(layout.width,layout.height)
-                                if (isVertical) {
-                                    glide.transform(RotateTransformation(-90f))
-                                } else if (Constants.rotationAngel > 0f) {
-                                    glide.transform(RotateTransformation(Constants.rotationAngel))
-                                }
+                                glide.transform(RotateTransformation(Constants.rotationAngel))
                                 glide.into(imageView)
                             } catch (e: Exception) {
                                 Log.e("CustomView", "$e at $fileName")
@@ -511,11 +567,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                             }
                             try {
                                 layout.addView(textureView)
-                                textureView.rotation = if (isVertical) {
-                                    -90f
-                                } else {
-                                    Constants.rotationAngel
-                                }
+                                textureView.rotation = Constants.rotationAngel
                                 val videoFile = File(MainActivity.storageDir, "${Constants.CUSTOM_CONTENT_DIR}/$fileName")
                                 mediaPlayer.setDataSource(videoFile.toString())
                                 mediaPlayer.setVolume(0f,0f)
@@ -755,11 +807,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                             .load(imageFile)
                                             .diskCacheStrategy(DiskCacheStrategy.NONE)
                                             .override(layout.width,layout.height)
-                                        if (isVertical) {
-                                            glide.transform(RotateTransformation(-90f))
-                                        } else if (Constants.rotationAngel > 0f) {
-                                            glide.transform(RotateTransformation(Constants.rotationAngel))
-                                        }
+                                        glide.transform(RotateTransformation(Constants.rotationAngel))
                                         if (evenImage) {
                                             glide.into(imageView)
                                             evenImage = false
@@ -792,11 +840,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                             imageView2.visibility = View.GONE
                                             textureView.visibility = View.VISIBLE
                                         }, 1000)
-                                        textureView.rotation = if (isVertical) {
-                                            -90f
-                                        } else {
-                                            Constants.rotationAngel
-                                        }
+                                        textureView.rotation = Constants.rotationAngel
                                         val videoFile = File(MainActivity.storageDir, "${Constants.CUSTOM_CONTENT_DIR}/$fileName")
                                         mediaPlayer.setDataSource(videoFile.toString())
                                         mediaPlayer.setVolume(0f,0f)
