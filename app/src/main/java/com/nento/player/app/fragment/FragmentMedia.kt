@@ -499,11 +499,9 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
 
                                     override fun onSurfaceTextureUpdated(p0: SurfaceTexture) { }
                                 }
-                            textureView.layoutParams = if (Constants.rotationAngel == 90f || Constants.rotationAngel == 270f) {
+                            textureView.layoutParams = if (isVertical || Constants.rotationAngel == 90f || Constants.rotationAngel == 270f) {
                                 LinearLayout.LayoutParams(
-                                    layout.height,
-                                    layout.width
-                                ).apply {
+                                    layout.height, layout.width).apply {
                                     topMargin = (layout.height - layout.width) / 2
                                     marginStart = (layout.width - layout.height) / 2
                                 }
