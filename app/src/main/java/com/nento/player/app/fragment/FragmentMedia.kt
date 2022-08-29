@@ -197,15 +197,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     val isVertical : Boolean = dLayoutObject.isVertical ?: false
                     linearLayout.layoutParams = ConstraintLayout.LayoutParams(
                         (layoutWidth * wMulti).toInt(), (layoutHeight * hMulti).toInt()).apply {
-                   /*     startToStart = R.id.customLayout
-                        topToTop = R.id.customLayout
-
-                        marginStart = (layoutX * wMulti).toInt()
-                        topMargin = if (dLayoutObject.isVertical == true) {
-                            MainActivity.displayHeight - (layoutHeight * hMulti).toInt() - (layoutY * hMulti).toInt()
-                        } else {
-                            (layoutY * hMulti).toInt()
-                        }    */
                         when(Constants.rotationAngel) {
                             0f -> {
                                 if (isVertical) {
@@ -289,6 +280,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     when(p1?.action) {
                         Constants.NEW_TEMPLATE_READY_BROADCAST -> {
                             currentMedia = CURRENT_TEMPLATE
+                            totalCustomContent = 0
                             val tempFile = File(MainActivity.storageDir, Constants.TEMPLATE_NAME)
                             val bMap= BitmapFactory.decodeFile(tempFile.toString())
                             if (bMap != null) {
@@ -298,6 +290,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                         }
                         Constants.NEW_PLAYLIST_READY_BROADCAST -> {
                             currentMedia = CURRENT_PLAYLIST
+                            totalCustomContent = 0
                             val itemsInPlaylist = p1.getStringArrayExtra(Constants.C_PLAYLIST)
                             for (item in itemsInPlaylist ?: emptyArray()) {
                                 Log.d("MediaPlaylist", item)
@@ -490,7 +483,9 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                             }
                         }
                     }
+                    Log.d("PlaylistLoop", "inner terminated")
                 }
+                Log.d("PlaylistLoop", "outer terminated")
                 imRunning = false
             }
         }

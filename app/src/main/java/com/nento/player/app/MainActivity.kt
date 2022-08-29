@@ -961,6 +961,7 @@ class MainActivity : AppCompatActivity() {
             async(Dispatchers.Main) {
                 while (takeScreenshots) {
                     captureScreenNow()
+                    Log.d("SocketStatus", mSocket.isActive.toString())
                     delay(60000)
                 }
             }
