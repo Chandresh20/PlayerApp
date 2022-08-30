@@ -1159,8 +1159,8 @@ class MainActivity : AppCompatActivity() {
         if (!onPauseCalledOnce) {
             onPauseCalledOnce = true
         } else {
-            mSocket?.disconnect()
-            Log.d("onPause", "Socket Disconnected")
+    //        mSocket?.disconnect()
+   //         Log.d("onPause", "Socket Disconnected")
             val restartTime = if (pauseForWifi) 120000 else 30000
             pauseForWifi = false
             val intent = Intent(this, TVActivity::class.java)
@@ -1181,10 +1181,10 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         cancelRestartAlarm()
-        if (mSocket != null) {
+     /*   if (mSocket != null) {
             mSocket?.connect()
             Log.d("mSocket","Socket Reconnected")
-        }
+        } */
     }
 
     @SuppressLint("UnspecifiedImmutableFlag")
