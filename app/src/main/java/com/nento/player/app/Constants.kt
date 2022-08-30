@@ -76,6 +76,6 @@ class Constants {
         var rotationAngel = 0f
         var verticalLayout = false  // manual rotation will not work when true
         const val APP_VERSION_CODE = 33
-        const val APP_VERSION_NAME = "2.0.1 beta33.8React"
+        const val APP_VERSION_NAME = "2.0.1 beta33.9React"
     }
 }

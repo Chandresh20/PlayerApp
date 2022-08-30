@@ -91,7 +91,7 @@ class MainActivity : AppCompatActivity() {
         countDownLayout = findViewById(R.id.countDownLayout)
         Thread.setDefaultUncaughtExceptionHandler(ExceptionHandler(this))
         storageDir = applicationContext.getExternalFilesDir("Contents")!!
-        cancelRestartAlarm()
+  //      cancelRestartAlarm()
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             onPauseCalledOnce = true
         }
@@ -164,19 +164,19 @@ class MainActivity : AppCompatActivity() {
         // setSocket Here
         setSocket()
         Log.d("Listening", "screen_data")
-        mSocket.on(Constants.SOCKET_SCREEN_DATA, screenSetupListener)
-        mSocket.on(Constants.SOCKET_TEMPLATE_DATA, templateListener)
-        mSocket.on(Constants.SOCKET_PLAYLIST_DATA, playlistListener)
-        mSocket.on(Constants.SOCKET_CUSTOM_DATA, customLayoutListener)
-        mSocket.on(Constants.SOCKET_CHECK_ONLINE_STATUS, amOnlineListener)
-        mSocket.on(Constants.SOCKET_CLOSE_SCREEN_APP, closeListener)
-        mSocket.on(Constants.SOCKET_UPGRADE_SCREEN_APP, upgradeListener)
-        mSocket.on(Constants.SOCKET_RESET_SCREEN_APP, resetListener)
-        mSocket.on(Constants.SOCKET_TAKE_SCREEN_SNAP_SHOT, screenShotListener)
-        mSocket.on(Constants.SOCKET_CHECK_LAST_UPLOAD_DATA, lastUploadListener)
-        mSocket.on(Constants.SOCKET_UPDATE_MEDIA_IN_SCREEN, mediaUpdateListener)
-        mSocket.on(Constants.SOCKET_ROTATE_SCREEN, rotateScreenListener)
-        mSocket.on(Constants.SOCKET_SHOW_HIDE_SCREEN_NUMBER, toggleScreenNumberListener)
+        mSocket?.on(Constants.SOCKET_SCREEN_DATA, screenSetupListener)
+        mSocket?.on(Constants.SOCKET_TEMPLATE_DATA, templateListener)
+        mSocket?.on(Constants.SOCKET_PLAYLIST_DATA, playlistListener)
+        mSocket?.on(Constants.SOCKET_CUSTOM_DATA, customLayoutListener)
+        mSocket?.on(Constants.SOCKET_CHECK_ONLINE_STATUS, amOnlineListener)
+        mSocket?.on(Constants.SOCKET_CLOSE_SCREEN_APP, closeListener)
+        mSocket?.on(Constants.SOCKET_UPGRADE_SCREEN_APP, upgradeListener)
+        mSocket?.on(Constants.SOCKET_RESET_SCREEN_APP, resetListener)
+        mSocket?.on(Constants.SOCKET_TAKE_SCREEN_SNAP_SHOT, screenShotListener)
+        mSocket?.on(Constants.SOCKET_CHECK_LAST_UPLOAD_DATA, lastUploadListener)
+        mSocket?.on(Constants.SOCKET_UPDATE_MEDIA_IN_SCREEN, mediaUpdateListener)
+        mSocket?.on(Constants.SOCKET_ROTATE_SCREEN, rotateScreenListener)
+        mSocket?.on(Constants.SOCKET_SHOW_HIDE_SCREEN_NUMBER, toggleScreenNumberListener)
         sendLastUpdate()
         loadAssignedContent()
         CoroutineScope(Dispatchers.Main).launch {
@@ -260,7 +260,7 @@ class MainActivity : AppCompatActivity() {
         detailObject.put("ScreenHeight", "$displayHeight")
         detailObject.put("Android API", "${Build.VERSION.SDK_INT}")
         Log.d("SendingScreenInfo", "$detailObject")
-        mSocket.emit(Constants.SOCKET_SCREEN_DATA, detailObject)
+        mSocket?.emit(Constants.SOCKET_SCREEN_DATA, detailObject)
     }
 
     private val templateListener = Emitter.Listener { args ->
@@ -672,12 +672,12 @@ class MainActivity : AppCompatActivity() {
         jsonRes.put("type", type)
         jsonRes.put("id", id)
         jsonRes.put("screenNumber", Constants.screenID)
-        mSocket.emit(Constants.SOCKET_CHECK_LAST_UPLOAD_DATA, jsonRes)
+        mSocket?.emit(Constants.SOCKET_CHECK_LAST_UPLOAD_DATA, jsonRes)
     }
 
     private val amOnlineListener = Emitter.Listener { args ->
         Log.d("ImOnLine", "Present sent")
-        mSocket.emit(Constants.SOCKET_CHECK_ONLINE_STATUS, args[0].toString())
+        mSocket?.emit(Constants.SOCKET_CHECK_ONLINE_STATUS, args[0].toString())
     }
 
     private val mediaUpdateListener = Emitter.Listener { args ->
@@ -961,7 +961,7 @@ class MainActivity : AppCompatActivity() {
             async(Dispatchers.Main) {
                 while (takeScreenshots) {
                     captureScreenNow()
-                    Log.d("SocketStatus", mSocket.isActive.toString())
+                    Log.d("SocketStatus", mSocket?.isActive.toString())
                     delay(60000)
                 }
             }
@@ -990,11 +990,14 @@ class MainActivity : AppCompatActivity() {
                     Log.d("ScreenPLay", "Video")
                     val bMap = FragmentMedia.playlistTextureView?.bitmap
                     if (bMap != null) {
+                        val matrix = Matrix()
+                        matrix.postRotate(Constants.rotationAngel)
                         val aspectRation : Float = bMap.width.toFloat() / bMap.height
                         val reqWidth = 400
                         val scaledMap = Bitmap.createScaledBitmap(bMap, reqWidth, (reqWidth / aspectRation).toInt(), false)
+                        val rotatedMap = Bitmap.createBitmap(scaledMap, 0 ,0, reqWidth, (reqWidth / aspectRation).toInt(), matrix, true)
                         val saveOutputStream = saveFile.outputStream()
-                        scaledMap.compress(Bitmap.CompressFormat.JPEG, 100, saveOutputStream)
+                        rotatedMap.compress(Bitmap.CompressFormat.JPEG, 100, saveOutputStream)
                         saveOutputStream.close()
                     }
                 }
@@ -1156,7 +1159,7 @@ class MainActivity : AppCompatActivity() {
         if (!onPauseCalledOnce) {
             onPauseCalledOnce = true
         } else {
-            mSocket.disconnect()
+            mSocket?.disconnect()
             Log.d("onPause", "Socket Disconnected")
             val restartTime = if (pauseForWifi) 120000 else 30000
             pauseForWifi = false
@@ -1172,6 +1175,15 @@ class MainActivity : AppCompatActivity() {
             } catch (e: java.lang.Exception) {
                 Log.e("UncaughtNew", "$e")
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        cancelRestartAlarm()
+        if (mSocket != null) {
+            mSocket?.connect()
+            Log.d("mSocket","Socket Reconnected")
         }
     }
 
@@ -1215,14 +1227,14 @@ class MainActivity : AppCompatActivity() {
         sendBroadcast(Intent(Constants.APP_DESTROYED_BROADCAST))
         Log.d("Destroyed", "sent Broadcast")
         autoRestartHandler.removeCallbacks(autoRestartRunnable)
-        mSocket.disconnect()
+        mSocket?.disconnect()
         Process.killProcess(Process.myPid())
         exitProcess(2)
         super.onDestroy()
     }
 
     override fun onBackPressed() {
-        mSocket.disconnect()
+        mSocket?.disconnect()
         finishAffinity()
     }
 
@@ -1256,7 +1268,7 @@ class MainActivity : AppCompatActivity() {
         var displayHeight : Int = 0
 
         lateinit var updateHandler2 : Handler
-        lateinit var mSocket : Socket
+        var mSocket : Socket? = null
         var byPassMaximize = false
         var pauseForWifi = false
 
@@ -1273,8 +1285,8 @@ class MainActivity : AppCompatActivity() {
             mOptions.callFactory = clientBuilder.build()
             mSocket = IO.socket("${Constants.BASE_URL}?screenNo=${Constants.screenID}",
                 mOptions)
-            mSocket.connect()
-            mSocket.emit(Constants.screenID, "Hello")
+            mSocket?.connect()
+            mSocket?.emit(Constants.screenID, "Hello")
         }
 
         @SuppressLint("UnspecifiedImmutableFlag")
