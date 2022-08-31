@@ -125,10 +125,26 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     pImage2.visibility = View.GONE
                 }
             }
+            if (mediaPlayer.isPlaying) {
+                try {
+                    mediaPlayer.stop()
+                } catch (e:Exception) {
+                    Log.e("ErrorPlaylistVideo", "$e")
+                }
+            }
             true
         }
         videoHandler = Handler(Looper.getMainLooper()) {
             val file = it.obj as String
+            Log.d("VideoHandler", file)
+            if (file == Constants.STOP_VIDEO) {
+                try {
+                    mediaPlayer.stop()
+                } catch (e:Exception) {
+                    Log.e("ErrorPlaylistVideo", "$e")
+                }
+                return@Handler false
+            }
             playOnMediaPlayer(file)
             playType = PLAY_TYPE_VIDEO
             glideHandler.postDelayed( {
@@ -152,6 +168,13 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             customLayout.visibility = View.VISIBLE
             customLayout.removeAllViews()
             proBar.visibility = View.GONE
+            if (mediaPlayer.isPlaying) {
+                try {
+                    mediaPlayer.stop()
+                } catch (e:Exception) {
+                    Log.e("ErrorPlaylistVideo", "$e")
+                }
+            }
             try {
                 //convert jsonData to Object
                 val gson = Gson()
@@ -179,6 +202,8 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                         Constants.rotationAngel = 0f
                     }
                 }
+                MainActivity.sharedPreferences.edit().putFloat(
+                    Constants.PREFS_ROTATION_ANGLE, Constants.rotationAngel).apply()
                 Log.d("CustomRotationSet", "${Constants.rotationAngel}")
                 for (layout in (dLayoutObject.layout ?: emptyList())) {
                     var layoutWidth : Int = (layout.width ?: 0).toInt()
@@ -472,6 +497,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                             if (vFile.exists()) {
                                 videoHandler.obtainMessage(0, vFile.toString()).sendToTarget()
                             }
+                            Log.d("TestingVideoDuration", "${item.duration}")
                             for (i in 0 until (item.duration ?: 5)) {
                                 if (currentMedia != CURRENT_PLAYLIST) {
                                     break@inner
@@ -481,6 +507,8 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                             if (currentMedia != CURRENT_PLAYLIST) {
                                 break@inner
                             }
+                            videoHandler.obtainMessage(
+                                0, Constants.STOP_VIDEO).sendToTarget()
                         }
                     }
                     Log.d("PlaylistLoop", "inner terminated")

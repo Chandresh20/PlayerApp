@@ -12,7 +12,7 @@ android {
         minSdk 22
         targetSdk 32
         versionCode 33
-        versionName "2.0 Beta33.9React"
+        versionName "2.0 Beta34Live"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
