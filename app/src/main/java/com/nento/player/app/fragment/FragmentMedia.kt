@@ -212,7 +212,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     var layoutY : Int = (layout.y ?: 0).toInt()
 
                     if (dLayoutObject.isVertical == true) {
-                          Constants.verticalLayout = true
                           layoutWidth = (layout.height ?: 0).toInt()
                           layoutHeight = (layout.width ?: 0).toInt()
                           layoutX = (layout.y ?: 0).toInt()
@@ -301,7 +300,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                         delay(500)
                     }
                     clearMediaPlayers()
-                    Constants.verticalLayout = false
                     when(p1?.action) {
                         Constants.NEW_TEMPLATE_READY_BROADCAST -> {
                             currentMedia = CURRENT_TEMPLATE

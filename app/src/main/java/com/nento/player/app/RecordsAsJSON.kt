@@ -7,11 +7,11 @@ object RecordsAsJSON {
 
     private val recordFile = File(MainActivity.storageDir, "records.json")
 
-    fun addRecord(name: String, duration: Int) {
+ /*   fun addRecord(name: String, duration: Int) {
         val allRec = getAllRecords()
         allRec.put(name, duration)
         recordFile.writeText(allRec.toString())
-    }
+    }  */
 
     fun getAllRecords() : JSONObject {
         return if (!recordFile.exists()) {
@@ -21,9 +21,9 @@ object RecordsAsJSON {
         }
     }
 
-    fun clearAllRecords() {
+  /*  fun clearAllRecords() {
         if (recordFile.exists()) {
             recordFile.delete()
         }
-    }
+    }  */
 }

@@ -1161,7 +1161,7 @@ class MainActivity : AppCompatActivity() {
         } else {
     //        mSocket?.disconnect()
    //         Log.d("onPause", "Socket Disconnected")
-            val restartTime = if (pauseForWifi) 120000 else 30000
+            val restartTime = if (pauseForWifi) 240000 else 30000
             pauseForWifi = false
             val intent = Intent(this, TVActivity::class.java)
             try {

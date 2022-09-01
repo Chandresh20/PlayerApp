@@ -1,5 +1,6 @@
 package com.nento.player.app
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.AlarmManager
 import android.app.PendingIntent
@@ -7,12 +8,12 @@ import android.content.Context.ALARM_SERVICE
 import android.content.Intent
 import android.os.Process
 import android.util.Log
-import io.sentry.Sentry
 import java.lang.Exception
 import kotlin.system.exitProcess
 
 class ExceptionHandler(private val activity: Activity) : Thread.UncaughtExceptionHandler {
 
+    @SuppressLint("UnspecifiedImmutableFlag")
     override fun uncaughtException(p0: Thread, p1: Throwable) {
         Log.e("UncaughtException", "$p0: ${p1.message}")
         MainActivity.sendToSentry("Caught: ${p1.message}")
