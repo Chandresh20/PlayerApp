@@ -11,8 +11,8 @@ android {
         applicationId "com.nento.player.app"
         minSdk 22
         targetSdk 32
-        versionCode 34
-        versionName "Stable-01"
+        versionCode 35
+        versionName "Stable1.01"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 

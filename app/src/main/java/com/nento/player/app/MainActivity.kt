@@ -462,9 +462,12 @@ class MainActivity : AppCompatActivity() {
                                 }
                             }
                             if(!keepDownloading) {
-                                inStream.close()
-                                outStream.close()
-                                throw IOException("Interrupt")
+                                if ((contentLength - totalWrite) > 100) {
+                                    inStream.close()
+                                    outStream.close()
+                                    Log.d("Inturrept after", "$totalWrite")
+                                    throw IOException("Interrupt")
+                                }
                             }
                             inStream.close()
                             outStream.close()
@@ -472,7 +475,7 @@ class MainActivity : AppCompatActivity() {
                             updateHandler2.obtainMessage(0, "$update% ($itemCount/$totalCount)").sendToTarget()
                             Log.d("Finished File", "${item.mediaName} : $totalWrite")
                         }
-                        // TODO ("move downloaded content to playlistDir
+
                         val playlistDir = File(storageDir, Constants.PLAYLIST_DIR_NAME)
                         if (!playlistDir.exists()) playlistDir.mkdirs()
                         messageHandler.obtainMessage(0, "Coping data").sendToTarget()

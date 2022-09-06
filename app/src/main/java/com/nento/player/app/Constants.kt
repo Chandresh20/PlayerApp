@@ -75,7 +75,7 @@ class Constants {
 
         var onSplashScreen = true
         var rotationAngel = 0f
-        const val APP_VERSION_CODE = 34
-        const val APP_VERSION_NAME = "Stable01"
+        const val APP_VERSION_CODE = 35
+        const val APP_VERSION_NAME = "Stable1.01"
     }
 }
