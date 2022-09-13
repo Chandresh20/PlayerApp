@@ -7,8 +7,8 @@ class Constants {
         const val CONNECTION_TIMEOUT = 20L
         const val READ_TIMEOUT = 20L
         const val WRITE_TIMEOUT = 20L
-    //    const val BASE_URL = "https://react.tjcg.in/"
-         const val BASE_URL = "https://signage.mycircle.net/"
+        const val BASE_URL = "https://react.tjcg.in/"
+    //     const val BASE_URL = "https://signage.mycircle.net/"
         const val TEMPLATE_NAME ="template"
         const val PLAYLIST_FILE_NAME = "playlistObject"
         const val PLAYLIST_DIR_NAME = "Playlists"
@@ -37,6 +37,7 @@ class Constants {
         const val PREFS_MAIN = "sharedPreferencesMain"
         const val PREFS_SCREEN_ID = "screenID"
         const val PREFS_CONTENT_ASSIGNED = "ContentAssigned"
+        const val PREFS_CURRENT_TEMPLATE_VERTICAL = "isTemplateVertical"
         const val PREFS_CONTENT_ID = "ContentId"
         const val PREFS_SCREEN_PAIRED = "isScreenPaired"
         const val PREFS_PLAYER_ID = "playerID"
@@ -72,10 +73,12 @@ class Constants {
         var screenID = ""
         var playerId = ""
         var deviceMemory = "0B"
+        var isTemplateVertical = false
 
         var onSplashScreen = true
         var rotationAngel = 0f
+        var verticalLayout = false  // manual rotation will not work when true
         const val APP_VERSION_CODE = 35
-        const val APP_VERSION_NAME = "Stable1.01"
+        const val APP_VERSION_NAME = "React-Beta34.3"
     }
 }

@@ -83,6 +83,7 @@ class MainActivity : AppCompatActivity() {
         window?.setFlags(WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
             WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED)
         Constants.rotationAngel = sharedPreferences.getFloat(Constants.PREFS_ROTATION_ANGLE, 0f)
+        Constants.isTemplateVertical = sharedPreferences.getBoolean(Constants.PREFS_CURRENT_TEMPLATE_VERTICAL, false)
         Log.d("OrientationAngle", "${Constants.rotationAngel}")
         mainViewModel = ViewModelProvider(this).get(MainViewModel::class.java)
         mainViewModel.isIdHidden.value = sharedPreferences.getBoolean(Constants.PREFS_IS_ID_HIDDEN, false)
@@ -271,6 +272,12 @@ class MainActivity : AppCompatActivity() {
         val templateName = jsonObject.get("file_name")
         val url = jsonObject.get("image_url")
         val mediaId = jsonObject.get("media_id")
+        var isVertical = jsonObject.get("isVertical")
+        isVertical = if (isVertical.toString().isBlank()) {
+            false
+        } else {
+            isVertical.toString().toBoolean()
+        }
         Log.d("TemplateURL", url.toString())
         CoroutineScope(Dispatchers.Main).launch {
             while (holdNewContent) {
@@ -287,9 +294,11 @@ class MainActivity : AppCompatActivity() {
                     sharedPreferences.edit().apply {
                         putInt(Constants.PREFS_CONTENT_ASSIGNED, assignedContent)
                         putString(Constants.PREFS_CONTENT_ID, mediaId.toString())
+                        putBoolean(Constants.PREFS_CURRENT_TEMPLATE_VERTICAL, isVertical)
                     }.apply()
                     clearPlaylistDir()
                     deleteCustomDir()
+                    Constants.isTemplateVertical = isVertical
                     val templateIntent = Intent(Constants.NEW_TEMPLATE_READY_BROADCAST)
                     sendBroadcast(templateIntent)
                     //save file name
@@ -427,6 +436,7 @@ class MainActivity : AppCompatActivity() {
                             val inStream = urlConnection.getInputStream()
                             val writeFile = File(storageDir, "${Constants.DOWNLOAD_CONTENT_DIR}/${item.mediaName}")
                             val contentLength = urlConnection.contentLength
+                            Log.d("PlaylistContentLength", "$contentLength")
                             if (writeFile.exists()) {
                                 writeFile.delete()
                             }
@@ -498,6 +508,7 @@ class MainActivity : AppCompatActivity() {
                         return@async false
                     }
                 } catch (e:Exception) {
+                    Log.e("Playlist download", "$e")
                     imDownloading = false
                     messageHandler.obtainMessage(0, "Error").sendToTarget()
                     return@async false
@@ -689,6 +700,12 @@ class MainActivity : AppCompatActivity() {
         val fileName = msg.get("file_name")
         val imageURL = msg.get("image_url")
         val mediaId = msg.get("media_id")
+        var isVertical = msg.get("isVertical")
+        isVertical = if (isVertical.toString().isBlank()) {
+            false
+        } else {
+            isVertical.toString().toBoolean()
+        }
         when(assignedContent) {
             Constants.CONTENT_ASSIGNED_TEMPLATE -> {
                 val templateName = sharedPreferences.getString(Constants.PREFS_TEMPLATE_NAME, "")
@@ -712,7 +729,9 @@ class MainActivity : AppCompatActivity() {
                                 sharedPreferences.edit().apply {
                                     putInt(Constants.PREFS_CONTENT_ASSIGNED, assignedContent)
                                     putString(Constants.PREFS_CONTENT_ID, mediaId.toString())
+                                    putBoolean(Constants.PREFS_CURRENT_TEMPLATE_VERTICAL, isVertical)
                                 }.apply()
+                                Constants.isTemplateVertical = isVertical
                                 clearPlaylistDir()
                                 deleteCustomDir()
                                 val templateIntent = Intent(Constants.NEW_TEMPLATE_READY_BROADCAST)
@@ -1194,7 +1213,7 @@ class MainActivity : AppCompatActivity() {
     private fun cancelRestartAlarm() {
         val intent = Intent(applicationContext, TVActivity::class.java)
         val pIntent = PendingIntent.getActivity(applicationContext,
-            0, intent, PendingIntent.FLAG_ONE_SHOT)
+            0, intent, PendingIntent.FLAG_IMMUTABLE)
         val arm = applicationContext.getSystemService(ALARM_SERVICE) as AlarmManager
         arm.cancel(pIntent)
         Log.d("Restart", "Canceled")
