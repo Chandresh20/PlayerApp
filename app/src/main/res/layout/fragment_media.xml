@@ -18,14 +18,14 @@
     <ImageView
         android:layout_width="match_parent"
         android:id="@+id/previewImage"
-        android:scaleType="fitXY"
+
         android:visibility="gone"
         android:layout_height="match_parent"/>
 
     <ImageView
         android:layout_width="match_parent"
         android:id="@+id/previewImage2"
-        android:scaleType="fitXY"
+
         android:visibility="gone"
         android:layout_height="match_parent"/>
 

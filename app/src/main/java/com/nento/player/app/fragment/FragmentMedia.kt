@@ -9,6 +9,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.graphics.SurfaceTexture
+import android.media.Image
 import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.Handler
@@ -95,6 +96,37 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             customLayout.visibility = View.GONE
             proBar.visibility = View.GONE
             customLayout.removeAllViews()
+            if(currentMedia == CURRENT_TEMPLATE) {
+                Log.d("IsVerticalTemplate", "${Constants.isTemplateVertical}")
+                if ((Constants.rotationAngel == 0f
+                    || Constants.rotationAngel == 180f)
+                    && !Constants.isTemplateVertical) {
+                    Log.d("FitXY horizontal", "------------------------")
+                    pImage.scaleType = ImageView.ScaleType.FIT_XY
+                    pImage2.scaleType = ImageView.ScaleType.FIT_XY
+                }
+                if ((Constants.rotationAngel == 0f
+                    || Constants.rotationAngel == 180f)
+                    && Constants.isTemplateVertical) {
+                    Log.d("FitCenter Vertical", "--------------------------")
+                    pImage.scaleType = ImageView.ScaleType.FIT_CENTER
+                    pImage2.scaleType = ImageView.ScaleType.FIT_CENTER
+                }
+                if ((Constants.rotationAngel == 90f
+                    || Constants.rotationAngel == 270f)
+                    && Constants.isTemplateVertical) {
+                    Log.d("FitXY vertical", "-----------------------------")
+                    pImage.scaleType = ImageView.ScaleType.FIT_XY
+                    pImage2.scaleType =ImageView.ScaleType.FIT_XY
+                }
+                if ((Constants.rotationAngel == 90f
+                    || Constants.rotationAngel == 270f)
+                    && !Constants.isTemplateVertical) {
+                    Log.d("FitCenter Horizontal", "-------------------------")
+                    pImage.scaleType = ImageView.ScaleType.FIT_CENTER
+                    pImage2.scaleType = ImageView.ScaleType.FIT_CENTER
+                }
+            }
             val glide = Glide.with(ctx)
                 .load(file)
                 .diskCacheStrategy(DiskCacheStrategy.NONE)
