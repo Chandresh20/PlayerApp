@@ -83,7 +83,6 @@ class MainActivity : AppCompatActivity() {
         window?.setFlags(WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
             WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED)
         Constants.rotationAngel = sharedPreferences.getFloat(Constants.PREFS_ROTATION_ANGLE, 0f)
-        Constants.isTemplateVertical = sharedPreferences.getBoolean(Constants.PREFS_CURRENT_TEMPLATE_VERTICAL, false)
         Log.d("OrientationAngle", "${Constants.rotationAngel}")
         mainViewModel = ViewModelProvider(this).get(MainViewModel::class.java)
         mainViewModel.isIdHidden.value = sharedPreferences.getBoolean(Constants.PREFS_IS_ID_HIDDEN, false)
@@ -298,7 +297,6 @@ class MainActivity : AppCompatActivity() {
                     }.apply()
                     clearPlaylistDir()
                     deleteCustomDir()
-                    Constants.isTemplateVertical = isVertical
                     val templateIntent = Intent(Constants.NEW_TEMPLATE_READY_BROADCAST)
                     sendBroadcast(templateIntent)
                     //save file name
@@ -731,7 +729,6 @@ class MainActivity : AppCompatActivity() {
                                     putString(Constants.PREFS_CONTENT_ID, mediaId.toString())
                                     putBoolean(Constants.PREFS_CURRENT_TEMPLATE_VERTICAL, isVertical)
                                 }.apply()
-                                Constants.isTemplateVertical = isVertical
                                 clearPlaylistDir()
                                 deleteCustomDir()
                                 val templateIntent = Intent(Constants.NEW_TEMPLATE_READY_BROADCAST)

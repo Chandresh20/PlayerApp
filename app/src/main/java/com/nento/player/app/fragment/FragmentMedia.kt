@@ -90,42 +90,40 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
         glideHandler = Handler(Looper.getMainLooper()) {
             // message format ArrayOf(file: File, isVertical: Boolean)
             val info = it.obj as Array<*>
-            val file = info[0]
+            val file = info[0] as File
+            val isVertical = info[1] as Boolean
             playType = PLAY_TYPE_IMAGE
             pVideo.visibility = View.GONE
             customLayout.visibility = View.GONE
             proBar.visibility = View.GONE
             customLayout.removeAllViews()
-            if(currentMedia == CURRENT_TEMPLATE) {
-                Log.d("IsVerticalTemplate", "${Constants.isTemplateVertical}")
-                if ((Constants.rotationAngel == 0f
-                    || Constants.rotationAngel == 180f)
-                    && !Constants.isTemplateVertical) {
-                    Log.d("FitXY horizontal", "------------------------")
-                    pImage.scaleType = ImageView.ScaleType.FIT_XY
-                    pImage2.scaleType = ImageView.ScaleType.FIT_XY
-                }
-                if ((Constants.rotationAngel == 0f
-                    || Constants.rotationAngel == 180f)
-                    && Constants.isTemplateVertical) {
-                    Log.d("FitCenter Vertical", "--------------------------")
-                    pImage.scaleType = ImageView.ScaleType.FIT_CENTER
-                    pImage2.scaleType = ImageView.ScaleType.FIT_CENTER
-                }
-                if ((Constants.rotationAngel == 90f
-                    || Constants.rotationAngel == 270f)
-                    && Constants.isTemplateVertical) {
-                    Log.d("FitXY vertical", "-----------------------------")
-                    pImage.scaleType = ImageView.ScaleType.FIT_XY
-                    pImage2.scaleType =ImageView.ScaleType.FIT_XY
-                }
-                if ((Constants.rotationAngel == 90f
-                    || Constants.rotationAngel == 270f)
-                    && !Constants.isTemplateVertical) {
-                    Log.d("FitCenter Horizontal", "-------------------------")
-                    pImage.scaleType = ImageView.ScaleType.FIT_CENTER
-                    pImage2.scaleType = ImageView.ScaleType.FIT_CENTER
-                }
+            if ((Constants.rotationAngel == 0f
+                        || Constants.rotationAngel == 180f)
+                && !isVertical) {
+                Log.d("FitXY horizontal", "------------------------")
+                pImage.scaleType = ImageView.ScaleType.FIT_XY
+                pImage2.scaleType = ImageView.ScaleType.FIT_XY
+            }
+            if ((Constants.rotationAngel == 0f
+                        || Constants.rotationAngel == 180f)
+                && isVertical) {
+                Log.d("FitCenter Vertical", "--------------------------")
+                pImage.scaleType = ImageView.ScaleType.FIT_CENTER
+                pImage2.scaleType = ImageView.ScaleType.FIT_CENTER
+            }
+            if ((Constants.rotationAngel == 90f
+                        || Constants.rotationAngel == 270f)
+                && isVertical) {
+                Log.d("FitXY vertical", "-----------------------------")
+                pImage.scaleType = ImageView.ScaleType.FIT_XY
+                pImage2.scaleType =ImageView.ScaleType.FIT_XY
+            }
+            if ((Constants.rotationAngel == 90f
+                        || Constants.rotationAngel == 270f)
+                && !isVertical) {
+                Log.d("FitCenter Horizontal", "-------------------------")
+                pImage.scaleType = ImageView.ScaleType.FIT_CENTER
+                pImage2.scaleType = ImageView.ScaleType.FIT_CENTER
             }
             val glide = Glide.with(ctx)
                 .load(file)

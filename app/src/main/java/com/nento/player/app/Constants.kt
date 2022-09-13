@@ -73,12 +73,10 @@ class Constants {
         var screenID = ""
         var playerId = ""
         var deviceMemory = "0B"
-        var isTemplateVertical = false
 
         var onSplashScreen = true
         var rotationAngel = 0f
-        var verticalLayout = false  // manual rotation will not work when true
         const val APP_VERSION_CODE = 35
-        const val APP_VERSION_NAME = "React-Beta34.3"
+        const val APP_VERSION_NAME = "React-Beta34.4"
     }
 }
