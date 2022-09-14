@@ -101,29 +101,41 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                         || Constants.rotationAngel == 180f)
                 && !isVertical) {
                 Log.d("FitXY horizontal", "------------------------")
-                pImage.scaleType = ImageView.ScaleType.FIT_XY
-                pImage2.scaleType = ImageView.ScaleType.FIT_XY
+                if (isEvenImage) {
+                    pImage2.scaleType = ImageView.ScaleType.FIT_XY
+                } else {
+                    pImage.scaleType = ImageView.ScaleType.FIT_XY
+                }
             }
             if ((Constants.rotationAngel == 0f
                         || Constants.rotationAngel == 180f)
                 && isVertical) {
                 Log.d("FitCenter Vertical", "--------------------------")
-                pImage.scaleType = ImageView.ScaleType.FIT_CENTER
-                pImage2.scaleType = ImageView.ScaleType.FIT_CENTER
+                if (isEvenImage) {
+                    pImage2.scaleType = ImageView.ScaleType.FIT_CENTER
+                } else {
+                    pImage.scaleType = ImageView.ScaleType.FIT_CENTER
+                }
             }
             if ((Constants.rotationAngel == 90f
                         || Constants.rotationAngel == 270f)
                 && isVertical) {
                 Log.d("FitXY vertical", "-----------------------------")
-                pImage.scaleType = ImageView.ScaleType.FIT_XY
-                pImage2.scaleType =ImageView.ScaleType.FIT_XY
+                if (isEvenImage) {
+                    pImage2.scaleType =ImageView.ScaleType.FIT_XY
+                } else {
+                    pImage.scaleType = ImageView.ScaleType.FIT_XY
+                }
             }
             if ((Constants.rotationAngel == 90f
                         || Constants.rotationAngel == 270f)
                 && !isVertical) {
                 Log.d("FitCenter Horizontal", "-------------------------")
-                pImage.scaleType = ImageView.ScaleType.FIT_CENTER
-                pImage2.scaleType = ImageView.ScaleType.FIT_CENTER
+                if (isEvenImage) {
+                    pImage2.scaleType = ImageView.ScaleType.FIT_CENTER
+                } else {
+                    pImage.scaleType = ImageView.ScaleType.FIT_CENTER
+                }
             }
             val glide = Glide.with(ctx)
                 .load(file)
