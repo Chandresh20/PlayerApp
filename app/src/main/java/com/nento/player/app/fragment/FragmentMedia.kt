@@ -9,7 +9,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.graphics.SurfaceTexture
-import android.media.Image
 import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.Handler
@@ -261,6 +260,9 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     }
                     val linearLayout = LinearLayout(ctx)
                     val isVertical : Boolean = dLayoutObject.isVertical ?: false
+                    if (layout.opacity != null) {
+                        linearLayout.alpha = layout.opacity ?: 1f
+                    }
                     linearLayout.layoutParams = ConstraintLayout.LayoutParams(
                         (layoutWidth * wMulti).toInt(), (layoutHeight * hMulti).toInt()).apply {
                         when(Constants.rotationAngel) {

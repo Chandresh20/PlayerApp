@@ -39,6 +39,9 @@ class CustomLayoutObject {
         /*     @SerializedName("id")
              var id : Int? = null  */
 
+        @SerializedName("opacity")
+        var opacity: Float? = null
+
         @SerializedName("media")
         var media : List<MediaInfo>? = null
 
