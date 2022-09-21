@@ -9,7 +9,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.graphics.SurfaceTexture
-import android.media.Image
 import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.Handler
@@ -254,13 +253,16 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     var layoutY : Int = (layout.y ?: 0).toInt()
 
                     if (dLayoutObject.isVertical == true) {
-                          layoutWidth = (layout.height ?: 0).toInt()
-                          layoutHeight = (layout.width ?: 0).toInt()
-                          layoutX = (layout.y ?: 0).toInt()
-                          layoutY = (layout.x ?: 0).toInt()
+                        layoutWidth = (layout.height ?: 0).toInt()
+                        layoutHeight = (layout.width ?: 0).toInt()
+                        layoutX = (layout.y ?: 0).toInt()
+                        layoutY = (layout.x ?: 0).toInt()
                     }
                     val linearLayout = LinearLayout(ctx)
                     val isVertical : Boolean = dLayoutObject.isVertical ?: false
+                    if (layout.opacity != null) {
+                        linearLayout.alpha = layout.opacity ?: 1f
+                    }
                     linearLayout.layoutParams = ConstraintLayout.LayoutParams(
                         (layoutWidth * wMulti).toInt(), (layoutHeight * hMulti).toInt()).apply {
                         when(Constants.rotationAngel) {
@@ -491,7 +493,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             if (pFile.exists()) {
                 Log.d("CheckingFile", "$key available")
                 itemArray.add(DisplayItems(key))
-                 //   , allRecords.get(key) as Int))
+                //   , allRecords.get(key) as Int))
             } else {
                 Log.e("CheckingFile", "$key not available")
             }
@@ -670,132 +672,132 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                             }
                         }
                         Constants.MEDIA_WEB_PAGE -> {
-                         /*   if (customWebView == null) {
-                                customWebView = WebView(ctx)
-                                customWebView?.layoutParams = LinearLayout.LayoutParams(
-                                    layout.width,
-                                    layout.height
-                                )
-                                customWebView?.settings?.javaScriptEnabled = true
-                                customWebView?.settings?.useWideViewPort = true
-                                customWebView?.settings?.loadWithOverviewMode = true
-                                customWebView?.webViewClient = object : WebViewClient() {
-                                    override fun shouldOverrideUrlLoading(
-                                        view: WebView?,
-                                        request: WebResourceRequest?
-                                    ): Boolean {
-                                        return false
-                                    }
-                                }
-                                customWebView?.settings?.allowContentAccess = true
-                                customWebView?.settings?.domStorageEnabled = true
-                                customWebView?.loadUrl(media.fileName ?: "NA")
-                                layout.addView(customWebView)
-                            } else {
-                                layout.addView(customWebView)
-                            }
-                            for (i in 0 until (media.timeInSeconds ?: 10)) {
-                                if (currentMedia != CURRENT_CUSTOM) {
-                                    break
-                                }
-                                delay(1000)
-                            }  */
+                            /*   if (customWebView == null) {
+                                   customWebView = WebView(ctx)
+                                   customWebView?.layoutParams = LinearLayout.LayoutParams(
+                                       layout.width,
+                                       layout.height
+                                   )
+                                   customWebView?.settings?.javaScriptEnabled = true
+                                   customWebView?.settings?.useWideViewPort = true
+                                   customWebView?.settings?.loadWithOverviewMode = true
+                                   customWebView?.webViewClient = object : WebViewClient() {
+                                       override fun shouldOverrideUrlLoading(
+                                           view: WebView?,
+                                           request: WebResourceRequest?
+                                       ): Boolean {
+                                           return false
+                                       }
+                                   }
+                                   customWebView?.settings?.allowContentAccess = true
+                                   customWebView?.settings?.domStorageEnabled = true
+                                   customWebView?.loadUrl(media.fileName ?: "NA")
+                                   layout.addView(customWebView)
+                               } else {
+                                   layout.addView(customWebView)
+                               }
+                               for (i in 0 until (media.timeInSeconds ?: 10)) {
+                                   if (currentMedia != CURRENT_CUSTOM) {
+                                       break
+                                   }
+                                   delay(1000)
+                               }  */
                         }
                         Constants.MEDIA_YOUTUBE -> {
-                        /*    if (youView == null) {
-                                youView = YouTubePlayerView(ctx)
-                                youView?.layoutParams = LinearLayout.LayoutParams(
-                                    layout.width,
-                                    layout.height
-                                )
-                                val videoURL = media.fileName
-                                val keyStartIndex = videoURL?.indexOf("watch?v=") ?: 0
-                                val keyLength = 11
-                                val videoKey = videoURL?.substring(keyStartIndex+8, keyStartIndex +8 + keyLength)
-                                youView?.addYouTubePlayerListener(object :
-                                    AbstractYouTubePlayerListener() {
-                                    override fun onReady(youTubePlayer: YouTubePlayer) {
-                                        Log.d("YOUTUBEPlayer", "Ready")
-                                        youTubePlayer.loadVideo(videoKey ?: "null",0f)
-                                        youTubePlayer.addListener(object : YouTubePlayerListener {
+                            /*    if (youView == null) {
+                                    youView = YouTubePlayerView(ctx)
+                                    youView?.layoutParams = LinearLayout.LayoutParams(
+                                        layout.width,
+                                        layout.height
+                                    )
+                                    val videoURL = media.fileName
+                                    val keyStartIndex = videoURL?.indexOf("watch?v=") ?: 0
+                                    val keyLength = 11
+                                    val videoKey = videoURL?.substring(keyStartIndex+8, keyStartIndex +8 + keyLength)
+                                    youView?.addYouTubePlayerListener(object :
+                                        AbstractYouTubePlayerListener() {
+                                        override fun onReady(youTubePlayer: YouTubePlayer) {
+                                            Log.d("YOUTUBEPlayer", "Ready")
+                                            youTubePlayer.loadVideo(videoKey ?: "null",0f)
+                                            youTubePlayer.addListener(object : YouTubePlayerListener {
 
-                                            var vidDuration = 0f
+                                                var vidDuration = 0f
 
-                                            override fun onApiChange(youTubePlayer: YouTubePlayer) { }
+                                                override fun onApiChange(youTubePlayer: YouTubePlayer) { }
 
-                                            override fun onCurrentSecond(
-                                                youTubePlayer: YouTubePlayer,
-                                                second: Float
-                                            ) {
-                                                Log.d("CurrentSecond", "$second")
-                                                if (vidDuration > 0 && (second >= (vidDuration - 1))) {
-                                                    youView?.release()
-                                                    youView = null
+                                                override fun onCurrentSecond(
+                                                    youTubePlayer: YouTubePlayer,
+                                                    second: Float
+                                                ) {
+                                                    Log.d("CurrentSecond", "$second")
+                                                    if (vidDuration > 0 && (second >= (vidDuration - 1))) {
+                                                        youView?.release()
+                                                        youView = null
+                                                    }
                                                 }
-                                            }
 
-                                            override fun onError(
-                                                youTubePlayer: YouTubePlayer,
-                                                error: PlayerConstants.PlayerError
-                                            ) {
-                                            }
+                                                override fun onError(
+                                                    youTubePlayer: YouTubePlayer,
+                                                    error: PlayerConstants.PlayerError
+                                                ) {
+                                                }
 
-                                            override fun onPlaybackQualityChange(
-                                                youTubePlayer: YouTubePlayer,
-                                                playbackQuality: PlayerConstants.PlaybackQuality
-                                            ) {
-                                            }
+                                                override fun onPlaybackQualityChange(
+                                                    youTubePlayer: YouTubePlayer,
+                                                    playbackQuality: PlayerConstants.PlaybackQuality
+                                                ) {
+                                                }
 
-                                            override fun onPlaybackRateChange(
-                                                youTubePlayer: YouTubePlayer,
-                                                playbackRate: PlayerConstants.PlaybackRate
-                                            ) {
-                                            }
+                                                override fun onPlaybackRateChange(
+                                                    youTubePlayer: YouTubePlayer,
+                                                    playbackRate: PlayerConstants.PlaybackRate
+                                                ) {
+                                                }
 
-                                            override fun onReady(youTubePlayer: YouTubePlayer) {
-                                                Log.d("YOUTUBE", "Ready")
-                                            }
+                                                override fun onReady(youTubePlayer: YouTubePlayer) {
+                                                    Log.d("YOUTUBE", "Ready")
+                                                }
 
-                                            override fun onStateChange(
-                                                youTubePlayer: YouTubePlayer,
-                                                state: PlayerConstants.PlayerState
-                                            ) {
-                                            }
+                                                override fun onStateChange(
+                                                    youTubePlayer: YouTubePlayer,
+                                                    state: PlayerConstants.PlayerState
+                                                ) {
+                                                }
 
-                                            override fun onVideoDuration(
-                                                youTubePlayer: YouTubePlayer,
-                                                duration: Float
-                                            ) {
-                                                vidDuration = duration
-                                                Log.d("YOUTUBE", "Duration: $duration")
-                                            }
+                                                override fun onVideoDuration(
+                                                    youTubePlayer: YouTubePlayer,
+                                                    duration: Float
+                                                ) {
+                                                    vidDuration = duration
+                                                    Log.d("YOUTUBE", "Duration: $duration")
+                                                }
 
-                                            override fun onVideoId(
-                                                youTubePlayer: YouTubePlayer,
-                                                videoId: String
-                                            ) {
+                                                override fun onVideoId(
+                                                    youTubePlayer: YouTubePlayer,
+                                                    videoId: String
+                                                ) {
 
-                                            }
+                                                }
 
-                                            override fun onVideoLoadedFraction(
-                                                youTubePlayer: YouTubePlayer,
-                                                loadedFraction: Float
-                                            ) {
-                                            }
+                                                override fun onVideoLoadedFraction(
+                                                    youTubePlayer: YouTubePlayer,
+                                                    loadedFraction: Float
+                                                ) {
+                                                }
 
-                                        })
-                                    }
-                                })
-                                layout.addView(youView)
-                            } else {
-                                layout.addView(youView)
-                            }
-                            for (i in 0 until (media.timeInSeconds ?: 5)) {
-                                if (currentMedia != CURRENT_CUSTOM) {
-                                    break
+                                            })
+                                        }
+                                    })
+                                    layout.addView(youView)
+                                } else {
+                                    layout.addView(youView)
                                 }
-                                delay(1000)
-                            }  */
+                                for (i in 0 until (media.timeInSeconds ?: 5)) {
+                                    if (currentMedia != CURRENT_CUSTOM) {
+                                        break
+                                    }
+                                    delay(1000)
+                                }  */
                         }
                         else -> { Log.e("CustomLayout", "Unknown media type")}
                     }
