@@ -486,7 +486,7 @@ class MainActivity : AppCompatActivity() {
 
                         val playlistDir = File(storageDir, Constants.PLAYLIST_DIR_NAME)
                         if (!playlistDir.exists()) playlistDir.mkdirs()
-                        messageHandler.obtainMessage(0, "Coping data").sendToTarget()
+                        messageHandler.obtainMessage(0, "Copying data").sendToTarget()
                         for (downFile in (downloadDir.listFiles() ?: emptyArray())) {
                             val newPlaylistFile = File(playlistDir, downFile.name)
                             downFile.copyRecursively(newPlaylistFile, true)
@@ -608,7 +608,7 @@ class MainActivity : AppCompatActivity() {
                     if (!customDir.exists()) {
                         customDir.mkdirs()
                     }
-                    messageHandler.obtainMessage(0, "Coping Files").sendToTarget()
+                    messageHandler.obtainMessage(0, "Copying Files").sendToTarget()
                     for (downFile in (downloadDir.listFiles() ?: emptyArray())) {
                         val custFile = File(customDir, downFile.name ?: "NA")
                         downFile.copyRecursively(custFile, true)
@@ -772,7 +772,7 @@ class MainActivity : AppCompatActivity() {
                             outStream.write(buff, 0, read)
                         }
                         Log.d("MediaUpdate", "Finished $fileName")
-                        Log.d("MediaUpdate", "Coping to PlaylistDir")
+                        Log.d("MediaUpdate", "Copying to PlaylistDir")
                         val newImageFile = File(playListDir, fileName)
                         newFile.copyRecursively(newImageFile, true)
                         Log.d("MediaUpdate", "Copied")
