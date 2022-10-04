@@ -230,7 +230,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
 
                 totalCustomContent = dLayoutObject.layout?.size ?: 0
                 customContentFinished = 0
-                if (dLayoutObject.isVertical == true) {
+           /*     if (dLayoutObject.isVertical == true) {
                     if (Constants.rotationAngel == 0f) {
                         Constants.rotationAngel = 90f
                     } else if (Constants.rotationAngel == 180f) {
@@ -242,7 +242,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     } else if (Constants.rotationAngel == 270f) {
                         Constants.rotationAngel = 0f
                     }
-                }
+                }  */
                 MainActivity.sharedPreferences.edit().putFloat(
                     Constants.PREFS_ROTATION_ANGLE, Constants.rotationAngel).apply()
                 Log.d("CustomRotationSet", "${Constants.rotationAngel}")

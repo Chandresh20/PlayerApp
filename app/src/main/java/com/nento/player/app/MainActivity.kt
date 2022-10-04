@@ -416,6 +416,7 @@ class MainActivity : AppCompatActivity() {
                         Log.d("imDownloading", "true")
                     }
                     val downloadDir = File(storageDir, Constants.DOWNLOAD_CONTENT_DIR)
+                    val playlistDir = File(storageDir, Constants.PLAYLIST_DIR_NAME)
                     if (!downloadDir.exists()) {
                         downloadDir.mkdirs()
                     }
@@ -425,15 +426,36 @@ class MainActivity : AppCompatActivity() {
                         var itemCount = 0
                         for (item in playlistObject.playlist!!) {
                             Log.d("Starting", item.mediaId ?: "NA")
+                            // check if media is already available
+
+                            var existedFileLength = 0L
+                            if((item.mediaName ?: "null").contains(".mp4") || (item.mediaName ?: "null").contains(".mkv")
+                                || (item.mediaName ?: "null").contains(".mov") || (item.mediaName ?: "null").contains(".3gp")
+                                || (item.mediaName ?: "null").contains(".flv")) {
+                                if (playlistDir.exists()) {
+                                    val allFilesNames = playlistDir.list();
+                                    if (allFilesNames != null && allFilesNames.contains(item.mediaName)) {
+                                        Log.d("CheckPLaylisr", "${item.mediaName} already available")
+                                        existedFileLength = File(playlistDir, item.mediaName!!).length()
+                                    }
+                                }
+                            }
+
                             if (item.sIncluded == false) {
                                 Log.d("Skipping", "${item.mediaName}")
                                 continue
                             }
                             val url = URL(item.mediaId)
                             val urlConnection = url.openConnection()
+                            val contentLength = urlConnection.contentLength
+                            if ((contentLength - existedFileLength) < 100) {
+                                Log.d("CheckPLaylisr", "${item.mediaName} Okay")
+                                continue
+                            } else {
+                                Log.d("CheckPLaylisr", "${item.mediaName} Downloading")
+                            }
                             val inStream = urlConnection.getInputStream()
                             val writeFile = File(storageDir, "${Constants.DOWNLOAD_CONTENT_DIR}/${item.mediaName}")
-                            val contentLength = urlConnection.contentLength
                             Log.d("PlaylistContentLength", "$contentLength")
                             if (writeFile.exists()) {
                                 writeFile.delete()
@@ -557,6 +579,7 @@ class MainActivity : AppCompatActivity() {
                     }
                     imDownloading = true
                     val downloadDir = File(storageDir, Constants.DOWNLOAD_CONTENT_DIR)
+                    val customDir = File(storageDir, Constants.CUSTOM_CONTENT_DIR)
                     if (!downloadDir.exists()) {
                         downloadDir.mkdirs()
                     }
@@ -564,15 +587,30 @@ class MainActivity : AppCompatActivity() {
                     var itemCount = 0
                     updateHandler2.obtainMessage(0, "0% ($itemCount/$totalCount)").sendToTarget()
                     for (urlInfo in (IUrls ?: emptyList())) {
+                        var alreadyAvailableContentSize = 0L
+                        if (customDir.exists()) {
+                            if((urlInfo.name ?: "na").contains(".mp4") || (urlInfo.name ?: "na").contains(".mov") ||
+                                (urlInfo.name ?: "na").contains(".mkv") || (urlInfo.name ?: "na").contains(".webm")) {
+                                val customContentList = customDir.list()
+                                if (customContentList != null && customContentList.contains(urlInfo.name)) {
+                                    Log.d("CustomDir", "${urlInfo.name} already available")
+                                    alreadyAvailableContentSize = File(customDir, urlInfo.name!!).length()
+                                }
+                            }
+                        }
+                        val url = URL(urlInfo.url)
+                        val connection = url.openConnection()
+                        val contentLength = connection.contentLength
+                        if ((contentLength - alreadyAvailableContentSize) < 100) {
+                            Log.d("CustomDir", "${urlInfo.name} Okay, not downloading again")
+                            continue
+                        }
                         val fileName = File(downloadDir, urlInfo.name ?: "NA")
                         if (fileName.exists()) {
                             fileName.delete()
                         }
                         fileName.createNewFile()
-                        val url = URL(urlInfo.url)
-                        val connection = url.openConnection()
                         val inputStream = connection.getInputStream()
-                        val contentLength = connection.contentLength
                         val outStream = fileName.outputStream()
                         var buff : ByteArray
                         var loopCount = 0
@@ -604,7 +642,6 @@ class MainActivity : AppCompatActivity() {
                         Log.d("Writing File", "${urlInfo.name} : $totalWrite")
                     }
                     //TODO ("move files to customLayout")
-                    val customDir = File(storageDir, Constants.CUSTOM_CONTENT_DIR)
                     if (!customDir.exists()) {
                         customDir.mkdirs()
                     }
