@@ -1,5 +1,7 @@
 package com.nento.player.app
 
+import org.json.JSONArray
+
 class Constants {
 
     companion object {
@@ -7,8 +9,8 @@ class Constants {
         const val CONNECTION_TIMEOUT = 20L
         const val READ_TIMEOUT = 20L
         const val WRITE_TIMEOUT = 20L
-    //    const val BASE_URL = "https://react.tjcg.in/"
-        const val BASE_URL = "https://signage.mycircle.net/"
+        const val BASE_URL = "https://react.tjcg.in/"
+    //    const val BASE_URL = "https://signage.mycircle.net/"
         const val TEMPLATE_NAME ="template"
         const val PLAYLIST_FILE_NAME = "playlistObject"
         const val PLAYLIST_DIR_NAME = "Playlists"
@@ -76,7 +78,46 @@ class Constants {
 
         var onSplashScreen = true
         var rotationAngel = 0f
+        var showWeather = false
+        var showTime = false
+        var weatherDataArray = JSONArray()
+        var dateTimeDataArray = JSONArray()
+        const val weatherAndTimeFontSizeMultiplier = 0.7f
+        const val weatherAndTimeMargin = 25
+        const val scaleMultiToMargin = 5
+
         const val APP_VERSION_CODE = 37
-        const val APP_VERSION_NAME = "Stable1.03"
+        const val APP_VERSION_NAME = "Beta35.3"
+
+        fun getDayNameFromCal(num: Int) : String {
+            return when(num) {
+                1 -> "Sunday"
+                2 -> "Monday"
+                3 -> "Tuesday"
+                4 -> "Wednesday"
+                5 -> "Thursday"
+                6 -> "Friday"
+                7 -> "Saturday"
+                else -> "error"
+            }
+        }
+
+        fun getMonthNameFromCal(num : Int) : String {
+            return when(num) {
+                0 -> "January"
+                1 -> "February"
+                2 -> "March"
+                3 -> "April"
+                4 -> "May"
+                5 -> "June"
+                6 -> "July"
+                7 -> "August"
+                8 -> "September"
+                9 -> "October"
+                10 -> "November"
+                11 -> "December"
+                else -> "Error"
+            }
+        }
     }
 }

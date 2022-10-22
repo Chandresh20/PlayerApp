@@ -36,6 +36,7 @@
         android:largeHeap="true"
         android:roundIcon="@drawable/signage_bita"
         android:supportsRtl="true"
+        android:usesCleartextTraffic="true"
         android:theme="@style/AppTheme">
         <activity
             android:name=".InitActivity"

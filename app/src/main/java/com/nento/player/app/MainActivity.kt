@@ -39,6 +39,7 @@ import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import androidx.core.view.drawToBitmap
+import com.google.gson.JsonObject
 import com.nento.player.app.Constants.Companion.onSplashScreen
 import com.nento.player.app.fragment.FragmentMedia
 import io.sentry.Sentry
@@ -48,6 +49,7 @@ import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.asRequestBody
+import org.json.JSONArray
 import java.lang.Runnable
 import java.net.NetworkInterface
 import java.util.*
@@ -277,6 +279,42 @@ class MainActivity : AppCompatActivity() {
         } else {
             isVertical.toString().toBoolean()
         }
+
+        // added for weather and time
+        val isWeather = jsonObject.get("isWether")
+        Constants.showWeather = if(isWeather.toString().isBlank()) {
+            false
+        } else {
+            isWeather.toString().toBoolean()
+        }
+        if(Constants.showWeather) {
+            val weatherJson = jsonObject.get("isWetherValue")
+            try {
+                Constants.weatherDataArray= JSONArray(weatherJson.toString())
+                Log.d("Weather in template", Constants.showWeather.toString())
+                Log.d("Weather in template", "${Constants.weatherDataArray}")
+            } catch (e: Exception) {
+                Log.e("WeatherError", "$e")
+            }
+        }
+
+        val isDateTime = jsonObject.get("isDateTime")
+        Constants.showTime = if(isDateTime.toString().isBlank()) {
+            false
+        } else {
+            isDateTime.toString().toBoolean()
+        }
+        if(Constants.showTime) {
+            val dateTimeJson = jsonObject.get("isDateTimeValue")
+            try {
+                Constants.dateTimeDataArray = JSONArray(dateTimeJson.toString())
+                Log.d("Time in template", "${Constants.dateTimeDataArray}")
+            }catch (e: Exception) {
+                Log.e("DateTimeError", "$e")
+            }
+        }
+
+
         Log.d("TemplateURL", url.toString())
         CoroutineScope(Dispatchers.Main).launch {
             while (holdNewContent) {
@@ -430,7 +468,7 @@ class MainActivity : AppCompatActivity() {
 
                             var existedFileLength = 0L
                             if((item.mediaName ?: "null").contains(".mp4") || (item.mediaName ?: "null").contains(".mkv")
-                                || (item.mediaName ?: "null").contains(".mov") || (item.mediaName ?: "null").contains(".3gp")
+                                || (item.mediaName ?: "null").contains(".mov") || (item.mediaName ?: "null").contains(".webm")
                                 || (item.mediaName ?: "null").contains(".flv")) {
                                 if (playlistDir.exists()) {
                                     val allFilesNames = playlistDir.list();
@@ -588,9 +626,10 @@ class MainActivity : AppCompatActivity() {
                     updateHandler2.obtainMessage(0, "0% ($itemCount/$totalCount)").sendToTarget()
                     for (urlInfo in (IUrls ?: emptyList())) {
                         var alreadyAvailableContentSize = 0L
+                        Log.d("CustomLayoutUrl", "${urlInfo.url}")
                         if (customDir.exists()) {
-                            if((urlInfo.name ?: "na").contains(".mp4") || (urlInfo.name ?: "na").contains(".mov") ||
-                                (urlInfo.name ?: "na").contains(".mkv") || (urlInfo.name ?: "na").contains(".webm")) {
+                            if((urlInfo.name ?: "na").contains(".mp4") || (urlInfo.name ?: "na").contains(".webm") ||
+                                (urlInfo.name ?: "na").contains(".mkv") || (urlInfo.name ?: "na").contains(".mov")) {
                                 val customContentList = customDir.list()
                                 if (customContentList != null && customContentList.contains(urlInfo.name)) {
                                     Log.d("CustomDir", "${urlInfo.name} already available")

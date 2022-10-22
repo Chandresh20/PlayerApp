@@ -5,10 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Matrix
-import android.graphics.SurfaceTexture
+import android.graphics.*
 import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.Handler
@@ -30,8 +27,13 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool
 import com.bumptech.glide.load.resource.bitmap.BitmapTransformation
+import org.json.JSONArray
+import org.json.JSONObject
+import java.net.URL
 import java.security.MessageDigest
+import java.util.*
 import kotlin.Exception
+import kotlin.collections.ArrayList
 
 
 const val CURRENT_TEMPLATE = 0
@@ -54,8 +56,15 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
     private lateinit var mediaPlayer : MediaPlayer
     private var totalCustomContent = 0
     private var customContentFinished = 0
+    private var areClocksRunning = false
+    private var timeInAMPM = false
 
     private lateinit var glideHandler: Handler
+    private lateinit var timeHandler : Handler
+    private lateinit var timeRunnable: Runnable
+    private val allClocks = ArrayList<ClockObject>()
+    private val wMulti: Float = (MainActivity.displayWidth.toFloat() / Constants.CUSTOM_WIDTH_THEIR)
+    private val hMulti: Float = (MainActivity.displayHeight.toFloat() / Constants.CUSTOM_HEIGHT_THEIR)
 
     @SuppressLint("SetJavaScriptEnabled", "CheckResult")
     override fun onCreateView(
@@ -69,17 +78,50 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
         val pImage = rootView.findViewById<ImageView>(R.id.previewImage)
         val pImage2 = rootView.findViewById<ImageView>(R.id.previewImage2)
         val pVideo = rootView.findViewById<TextureView>(R.id.textureVideo)
+        val weatherAndTimeLayout = rootView.findViewById<ConstraintLayout>(R.id.weatherAndTimeLayout)
+     //   val weatherText = rootView.findViewById<TextView>(R.id.weatherText)
         mediaPlayer = MediaPlayer()
         var isEvenImage = false
         val customLayout = rootView.findViewById<ConstraintLayout>(R.id.customLayout)
         playlistTextureView = pVideo
         playlistTextureView?.surfaceTextureListener = this
-        val wMulti: Float = (MainActivity.displayWidth.toFloat() / Constants.CUSTOM_WIDTH_THEIR)
-        val hMulti: Float = (MainActivity.displayHeight.toFloat() / Constants.CUSTOM_HEIGHT_THEIR)
         val screenId = rootView.findViewById<TextView>(R.id.screenIdText)
         val proBar = rootView.findViewById<ProgressBar>(R.id.mediaProgressBar)
         screenId.text = Constants.screenID
 
+        timeRunnable = object : Runnable {
+            val cal = Calendar.getInstance()
+            override fun run() {
+                for(clock in allClocks) {
+                    cal.timeInMillis = clock.time
+                    val hour24 = cal.get(Calendar.HOUR_OF_DAY)
+                    val hour12 = cal.get(Calendar.HOUR)
+                    val amPm = cal.get(Calendar.AM_PM)
+                    var min = cal.get(Calendar.MINUTE).toString()
+                    if (min.length == 1) {
+                        min = "0$min"
+                    }
+                    val dayName = cal.get(Calendar.DAY_OF_WEEK)
+                    val month = cal.get(Calendar.MONTH)
+                    val date = cal.get(Calendar.DATE)
+                    val year = cal.get(Calendar.YEAR)
+                    Log.d("TimeRunnable", "updated")
+                    val clockText : String = if (timeInAMPM) {
+                        var amPMS = "AM"
+                        if (amPm == 1) {
+                            amPMS = "PM"
+                        }
+                        "$hour12:$min $amPMS, ${Constants.getDayNameFromCal(dayName)}\n${Constants.getMonthNameFromCal(month)} $date, $year"
+                    } else {
+                        "$hour24:$min, ${Constants.getDayNameFromCal(dayName)}\n${Constants.getMonthNameFromCal(month)} $date, $year"
+                    }
+                    clock.textView.text = clockText
+                    clock.time += 30000
+                }
+                timeHandler.postDelayed(this, 30000)
+            }
+        }
+        timeHandler = Handler(Looper.getMainLooper())
         errorHandler = Handler(Looper.getMainLooper()) {
             val msg = it.obj as String
             Log.e("MediaError", msg)
@@ -129,7 +171,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             if ((Constants.rotationAngel == 90f
                         || Constants.rotationAngel == 270f)
                 && !isVertical) {
-                Log.d("FitCenter Horizontal", "-------------------------")
+                Log.d("FitCenter Horizontal", "----------------------------")
                 if (isEvenImage) {
                     pImage2.scaleType = ImageView.ScaleType.FIT_CENTER
                 } else {
@@ -166,6 +208,9 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     pImage2.visibility = View.GONE
                 }
             }
+            // show time and weather if set true
+            setWeatherAndTimeLayout(weatherAndTimeLayout)
+
             if (mediaPlayer.isPlaying) {
                 try {
                     mediaPlayer.stop()
@@ -230,7 +275,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
 
                 totalCustomContent = dLayoutObject.layout?.size ?: 0
                 customContentFinished = 0
-           /*     if (dLayoutObject.isVertical == true) {
+                if (dLayoutObject.isVertical == true) {
                     if (Constants.rotationAngel == 0f) {
                         Constants.rotationAngel = 90f
                     } else if (Constants.rotationAngel == 180f) {
@@ -242,7 +287,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     } else if (Constants.rotationAngel == 270f) {
                         Constants.rotationAngel = 0f
                     }
-                }  */
+                }
                 MainActivity.sharedPreferences.edit().putFloat(
                     Constants.PREFS_ROTATION_ANGLE, Constants.rotationAngel).apply()
                 Log.d("CustomRotationSet", "${Constants.rotationAngel}")
@@ -957,6 +1002,205 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
         Log.d("CustomLayout", "$released media player stopped and released")
     }
 
+    private fun setWeatherAndTimeLayout(wNtLayout: ConstraintLayout) {
+        wNtLayout.removeAllViews()
+        if(Constants.showWeather) {
+            addInWeatherTimeLayout(Constants.weatherDataArray, wNtLayout, true)
+        }
+        if (Constants.showTime) {
+            addInWeatherTimeLayout(Constants.dateTimeDataArray, wNtLayout, false)
+        }
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun addInWeatherTimeLayout(jsonArray: JSONArray, wNtLayout: ConstraintLayout, isWeatherElseTime : Boolean) {
+        for(i in 0 until jsonArray.length()) {
+            val timeText = TextView(ctx)
+            val jsonObject = jsonArray[i] as JSONObject
+            val x = jsonObject.get("x").toString().toInt()
+            val y = jsonObject.get("y").toString().toInt()
+            Log.d("X and Y", "$x and $y")
+            val text = jsonObject.get("text").toString()
+            if (text.contains("AM ") || text.contains("PM "))  {
+                timeInAMPM = true
+            } else {
+                timeInAMPM = false
+            }
+            val textColor = getColorFromString(jsonObject.get("fill").toString())
+            timeText.setTextColor(textColor)
+       //     val layoutWidth = jsonObject.get("width").toString().toFloat()
+       //     val layoutHeight = jsonObject.get("height").toString().toFloat()
+            timeText.text = "---"
+    //        timeText.scaleX = jsonObject.get("scaleX").toString().toFloat()
+   //         timeText.scaleY = jsonObject.get("scaleY").toString().toFloat()
+            timeText.setTextSize(jsonObject.get("fontSize").toString().toFloat() * Constants.weatherAndTimeFontSizeMultiplier)
+            val layoutParams = ConstraintLayout.LayoutParams(
+           //     (layoutWidth * wMulti).toInt() , (layoutHeight.toInt() * hMulti).toInt()
+                ConstraintLayout.LayoutParams.WRAP_CONTENT, ConstraintLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                when(Constants.rotationAngel) {
+                    0f -> {
+                        startToStart = R.id.weatherAndTimeLayout
+                        topToTop = R.id.weatherAndTimeLayout
+                        marginStart = (x * wMulti).toInt()
+                        topMargin = (y * hMulti).toInt()
+                    }
+                    90f -> {
+                        endToEnd = R.id.weatherAndTimeLayout
+                        topToTop = R.id.weatherAndTimeLayout
+                        marginEnd = (x * wMulti).toInt()
+                        topMargin = (y * hMulti).toInt()
+                    }
+                    180f -> {
+                        endToEnd = R.id.weatherAndTimeLayout
+                        bottomToBottom = R.id.weatherAndTimeLayout
+                        marginEnd = (x* wMulti).toInt()
+                        bottomMargin = (y * hMulti).toInt()
+                    }
+                    270f -> {
+                        startToStart = R.id.weatherAndTimeLayout
+                        topToTop = R.id.weatherAndTimeLayout
+                        marginStart = (x * wMulti).toInt()
+                        topMargin = MainActivity.displayHeight - (y*hMulti).toInt()
+                    }
+                }
+            }
+            timeText.layoutParams = layoutParams
+           //   timeText.setTextSize(10f)
+            timeText.rotation = Constants.rotationAngel
+            if(isWeatherElseTime) {
+                val latLongString = jsonObject.get("link").toString()
+                CoroutineScope(Dispatchers.Main).launch {
+                    val temperature = getWeatherFromApiAsync(latLongString).await()
+                    timeText.text = "$temperature°C"
+                }
+            } else {
+                val timeZoneString  = jsonObject.get("link").toString()
+                CoroutineScope(Dispatchers.Main).launch {
+                    val time = getTimeFromAPIAsync(timeZoneString).await()
+                    if (time > 0) {
+                        allClocks.add(ClockObject(time, timeText))
+                        if (!areClocksRunning) {
+                            timeHandler.post(timeRunnable)
+                            areClocksRunning = true
+                        }
+                    }
+                }
+            }
+            val shadowStr = jsonObject.get("shadow").toString()
+            if (shadowStr.isNotBlank() && shadowStr != "null") {
+                try {
+                    val shadowObject = jsonObject.get("shadow") as JSONObject
+                    val shadowColor = getColorFromString(shadowObject.get("color").toString())
+                    val blur = shadowObject.get("blur").toString().toFloat()
+                    val ofX = shadowObject.get("offsetX").toString().toFloat()
+                    val ofY = shadowObject.get("offsetY").toString().toFloat()
+                    timeText.setShadowLayer(blur, ofX, ofY, shadowColor)
+                } catch (e: Exception) {
+                    Log.e("ErrorWeatherShadow", "$e")
+                }
+            }
+            wNtLayout.addView(timeText)
+        }
+    }
+
+    private fun getColorFromString(str: String): Int {
+        val index = str.indexOf("(")
+        var color = 0
+        if(index > 0) {
+            var finalString = str.substring(index +1, str.length - 1)
+            finalString.replace(" ", "").also { finalString = it }
+            val colorsArray = finalString.split(",")
+            color = Color.rgb(
+                colorsArray[0].toInt(),
+                colorsArray[1].toInt(),
+                colorsArray[2].toInt()
+            )
+            Log.d("ColorString", finalString)
+        }
+        return color
+    }
+
+    private suspend fun getWeatherFromApiAsync(latLong: String) : Deferred<String> =
+        coroutineScope {
+            async(Dispatchers.IO) {
+                try {
+                    Log.d("weatherLink", latLong)
+                    val latLongSplits = latLong.split(",")
+                    Log.d("weatherLinkSize", "${latLongSplits.size}")
+                    if (latLongSplits.size < 2) return@async "Err"
+                    val latitude = latLongSplits[0]
+                    val longitude = latLongSplits[1]
+                    val apiURL = URL("https://api.open-meteo.com/v1/forecast?latitude=$latitude&longitude=$longitude&current_weather=true")
+                    val connection = apiURL.openConnection()
+                    connection.connect()
+                    val apiStream = connection.getInputStream()
+                    val buff = ByteArray(4096)
+                    val read = apiStream.read(buff)
+                    val finalString = String(buff,0, read)
+                    val weatherJson = JSONObject(finalString)
+                    val currentWeatherJson = weatherJson.get("current_weather") as JSONObject
+                    val temperature = currentWeatherJson.get("temperature")
+                    Log.d("WeatherApiRes", finalString)
+                    return@async temperature.toString()
+                } catch (e: Exception) {
+                    Log.e("WeatherAPIError", "$e")
+                    return@async "Err"
+                }
+            }
+        }
+
+    private suspend fun getTimeFromAPIAsync(timeZone: String) : Deferred<Long> =
+        coroutineScope {
+            async(Dispatchers.IO) {
+                try {
+                    Log.d("TimeZoneApi", timeZone)
+                    val cal = Calendar.getInstance()
+                    if(timeZone.lowercase() == cal.timeZone.id.lowercase()) {
+                        Log.d("TimeZone", "TimeZone same no api call")
+                        return@async cal.timeInMillis
+                    /*    val hour = cal.get(Calendar.HOUR_OF_DAY).toString()
+                        var minute = cal.get(Calendar.MINUTE).toString()
+                        if (minute.length == 1) {
+                            minute = "0$minute"
+                        }
+                        timeToReturn += "$hour : $minute"  */
+                    } else {
+                        val url = URL("http://worldtimeapi.org/api/timezone/$timeZone")
+                        val connection = url.openConnection()
+                        connection.connect()
+                        val inputStream = connection.getInputStream()
+                        val buf = ByteArray(4096)
+                        val read = inputStream.read(buf)
+                        val apiRes = String(buf, 0, read)
+                        val apiJson = JSONObject(apiRes)
+                        val utcOffsetString = apiJson.get("utc_offset").toString()
+                        val utcTime = cal.timeInMillis - cal.timeZone.rawOffset
+                        val utcOffsetPositiveStr = utcOffsetString.substring(1)
+                        val offsetHour = utcOffsetPositiveStr.split(":")[0]
+                        val offsetMinute = utcOffsetPositiveStr.split(":")[1]
+                        var millOffset = offsetHour.toInt() * 3600000
+                        millOffset += (offsetMinute.toInt() * 60000)
+                        val timeToDisplayMill = utcTime + millOffset
+                 /*       cal.timeInMillis = timeToDisplayMill
+               //         Log.d("TimeZone", "$offsetHour : $offsetMinute,  ${cal.get(Calendar.HOUR_OF_DAY)} : ${cal.get(Calendar.MINUTE)}")
+               //         Log.d("Timezone","utc :$utcTime, final offset :$millOffset")
+                        val hour = cal.get(Calendar.HOUR_OF_DAY).toString()
+                        var minute = cal.get(Calendar.MINUTE).toString()
+                        if (minute.length == 1) {
+                            minute = "0$minute"
+                        }
+                        timeToReturn += "$hour : $minute"  */
+                        return@async timeToDisplayMill
+                    }
+                } catch (e: Exception) {
+                    Log.e("TimeZoneAPI", "$e")
+                    return@async -1;
+                }
+            }
+        }
+
+
     class DisplayItems(val name: String)
 
     class RotateTransformation(private val rotationAngle : Float) : BitmapTransformation() {
@@ -975,8 +1219,9 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             matrix.postRotate(rotationAngle)
             return Bitmap.createBitmap(toTransform, 0, 0, toTransform.width, toTransform.height, matrix, true)
         }
-
     }
+
+    class ClockObject(var time: Long, val textView: TextView)
 
     companion object {
         const val PLAY_TYPE_IMAGE = 0
