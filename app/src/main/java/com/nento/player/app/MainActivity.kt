@@ -281,11 +281,15 @@ class MainActivity : AppCompatActivity() {
         }
 
         // added for weather and time
-        val isWeather = jsonObject.get("isWether")
-        Constants.showWeather = if(isWeather.toString().isBlank()) {
+        val isWeather = try {
+            jsonObject.get("isWether").toString()
+        } catch (e: Exception) {
+            ""
+        }
+        Constants.showWeather = if(isWeather.isBlank()) {
             false
         } else {
-            isWeather.toString().toBoolean()
+            isWeather.toBoolean()
         }
         if(Constants.showWeather) {
             val weatherJson = jsonObject.get("isWetherValue")
@@ -298,11 +302,15 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        val isDateTime = jsonObject.get("isDateTime")
-        Constants.showTime = if(isDateTime.toString().isBlank()) {
+        val isDateTime = try {
+            jsonObject.get("isDateTime").toString()
+        } catch (e: Exception) {
+            ""
+        }
+        Constants.showTime = if(isDateTime.isBlank()) {
             false
         } else {
-            isDateTime.toString().toBoolean()
+            isDateTime.toBoolean()
         }
         if(Constants.showTime) {
             val dateTimeJson = jsonObject.get("isDateTimeValue")
@@ -585,6 +593,25 @@ class MainActivity : AppCompatActivity() {
             val jsonObject = args[0] as JSONObject
             Log.d("CustomLayout", jsonObject.toString())
             val id = jsonObject.get("_id")
+
+            // added for weather and time
+            val isWeather = jsonObject.get("isWether")
+            Constants.showWeather = if(isWeather.toString().isBlank()) {
+                false
+            } else {
+                isWeather.toString().toBoolean()
+            }
+            if(Constants.showWeather) {
+                val weatherJson = jsonObject.get("isWetherValue")
+                try {
+                    Constants.weatherDataArray= JSONArray(weatherJson.toString())
+                    Log.d("Weather in template", Constants.showWeather.toString())
+                    Log.d("Weather in template", "${Constants.weatherDataArray}")
+                } catch (e: Exception) {
+                    Log.e("WeatherError", "$e")
+                }
+            }
+
             val customInfoFile = File(storageDir, Constants.CUSTOM_LAYOUT_JSON_NAME)
             if (customInfoFile.exists()) customInfoFile.deleteRecursively()
             customInfoFile.writeText(args[0].toString())

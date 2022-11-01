@@ -87,7 +87,7 @@ class Constants {
         const val scaleMultiToMargin = 5
 
         const val APP_VERSION_CODE = 37
-        const val APP_VERSION_NAME = "Beta35.3"
+        const val APP_VERSION_NAME = "Beta35.4"
 
         fun getDayNameFromCal(num: Int) : String {
             return when(num) {

@@ -57,7 +57,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
     private var totalCustomContent = 0
     private var customContentFinished = 0
     private var areClocksRunning = false
-    private var timeInAMPM = false
 
     private lateinit var glideHandler: Handler
     private lateinit var timeHandler : Handler
@@ -95,7 +94,10 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 for(clock in allClocks) {
                     cal.timeInMillis = clock.time
                     val hour24 = cal.get(Calendar.HOUR_OF_DAY)
-                    val hour12 = cal.get(Calendar.HOUR)
+                    var hour12 = cal.get(Calendar.HOUR)
+                    if (hour12 == 0) {
+                        hour12 = 12
+                    }
                     val amPm = cal.get(Calendar.AM_PM)
                     var min = cal.get(Calendar.MINUTE).toString()
                     if (min.length == 1) {
@@ -106,7 +108,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     val date = cal.get(Calendar.DATE)
                     val year = cal.get(Calendar.YEAR)
                     Log.d("TimeRunnable", "updated")
-                    val clockText : String = if (timeInAMPM) {
+                    val clockText : String = if (!clock.is24Hours) {
                         var amPMS = "AM"
                         if (amPm == 1) {
                             amPMS = "PM"
@@ -168,6 +170,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     pImage.scaleType = ImageView.ScaleType.FIT_XY
                 }
             }
+
             if ((Constants.rotationAngel == 90f
                         || Constants.rotationAngel == 270f)
                 && !isVertical) {
@@ -262,6 +265,8 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 }
             }
             try {
+                // show time and weather if set true
+                setWeatherAndTimeLayout(weatherAndTimeLayout)
                 //convert jsonData to Object
                 val gson = Gson()
                 val typeT = object : TypeToken<CustomLayoutObject>() { }
@@ -1021,11 +1026,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             val y = jsonObject.get("y").toString().toInt()
             Log.d("X and Y", "$x and $y")
             val text = jsonObject.get("text").toString()
-            if (text.contains("AM ") || text.contains("PM "))  {
-                timeInAMPM = true
-            } else {
-                timeInAMPM = false
-            }
+            val timeInAMPM = text.contains("AM ") || text.contains("PM ")
             val textColor = getColorFromString(jsonObject.get("fill").toString())
             timeText.setTextColor(textColor)
        //     val layoutWidth = jsonObject.get("width").toString().toFloat()
@@ -1079,7 +1080,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 CoroutineScope(Dispatchers.Main).launch {
                     val time = getTimeFromAPIAsync(timeZoneString).await()
                     if (time > 0) {
-                        allClocks.add(ClockObject(time, timeText))
+                        allClocks.add(ClockObject(time, timeText, !timeInAMPM))
                         if (!areClocksRunning) {
                             timeHandler.post(timeRunnable)
                             areClocksRunning = true
@@ -1181,7 +1182,12 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                         val offsetMinute = utcOffsetPositiveStr.split(":")[1]
                         var millOffset = offsetHour.toInt() * 3600000
                         millOffset += (offsetMinute.toInt() * 60000)
-                        val timeToDisplayMill = utcTime + millOffset
+                        Log.d("TimeZoneAPi", "current time: ${cal.timeInMillis}, utc time: $utcTime, millOffset: $millOffset")
+                        val timeToDisplayMill = if (utcOffsetString.first() == '-') {
+                            utcTime - millOffset
+                        } else {
+                            utcTime + millOffset
+                        }
                  /*       cal.timeInMillis = timeToDisplayMill
                //         Log.d("TimeZone", "$offsetHour : $offsetMinute,  ${cal.get(Calendar.HOUR_OF_DAY)} : ${cal.get(Calendar.MINUTE)}")
                //         Log.d("Timezone","utc :$utcTime, final offset :$millOffset")
@@ -1221,7 +1227,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
         }
     }
 
-    class ClockObject(var time: Long, val textView: TextView)
+    class ClockObject(var time: Long, val textView: TextView, val is24Hours: Boolean)
 
     companion object {
         const val PLAY_TYPE_IMAGE = 0
