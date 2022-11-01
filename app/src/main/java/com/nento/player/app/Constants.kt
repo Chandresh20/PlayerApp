@@ -82,12 +82,12 @@ class Constants {
         var showTime = false
         var weatherDataArray = JSONArray()
         var dateTimeDataArray = JSONArray()
-        const val weatherAndTimeFontSizeMultiplier = 0.7f
+        const val weatherAndTimeFontSizeMultiplier = 1.1f
         const val weatherAndTimeMargin = 25
         const val scaleMultiToMargin = 5
 
         const val APP_VERSION_CODE = 37
-        const val APP_VERSION_NAME = "Beta35.4"
+        const val APP_VERSION_NAME = "Beta35.5"
 
         fun getDayNameFromCal(num: Int) : String {
             return when(num) {

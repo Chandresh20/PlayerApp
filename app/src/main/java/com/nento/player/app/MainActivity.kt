@@ -39,7 +39,6 @@ import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import androidx.core.view.drawToBitmap
-import com.google.gson.JsonObject
 import com.nento.player.app.Constants.Companion.onSplashScreen
 import com.nento.player.app.fragment.FragmentMedia
 import io.sentry.Sentry
@@ -609,6 +608,26 @@ class MainActivity : AppCompatActivity() {
                     Log.d("Weather in template", "${Constants.weatherDataArray}")
                 } catch (e: Exception) {
                     Log.e("WeatherError", "$e")
+                }
+            }
+
+            val isDateTime = try {
+                jsonObject.get("isDateTime").toString()
+            } catch (e: Exception) {
+                ""
+            }
+            Constants.showTime = if(isDateTime.isBlank()) {
+                false
+            } else {
+                isDateTime.toBoolean()
+            }
+            if(Constants.showTime) {
+                val dateTimeJson = jsonObject.get("isDateTimeValue")
+                try {
+                    Constants.dateTimeDataArray = JSONArray(dateTimeJson.toString())
+                    Log.d("Time in template", "${Constants.dateTimeDataArray}")
+                }catch (e: Exception) {
+                    Log.e("DateTimeError", "$e")
                 }
             }
 

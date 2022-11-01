@@ -1034,7 +1034,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             timeText.text = "---"
     //        timeText.scaleX = jsonObject.get("scaleX").toString().toFloat()
    //         timeText.scaleY = jsonObject.get("scaleY").toString().toFloat()
-            timeText.setTextSize(jsonObject.get("fontSize").toString().toFloat() * Constants.weatherAndTimeFontSizeMultiplier)
+            timeText.textSize = jsonObject.get("fontSize").toString().toFloat() * Constants.weatherAndTimeFontSizeMultiplier
             val layoutParams = ConstraintLayout.LayoutParams(
            //     (layoutWidth * wMulti).toInt() , (layoutHeight.toInt() * hMulti).toInt()
                 ConstraintLayout.LayoutParams.WRAP_CONTENT, ConstraintLayout.LayoutParams.WRAP_CONTENT
