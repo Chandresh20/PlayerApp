@@ -15,6 +15,7 @@ import android.view.*
 import android.webkit.WebView
 import android.widget.*
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.google.gson.Gson
@@ -1009,11 +1010,101 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
 
     private fun setWeatherAndTimeLayout(wNtLayout: ConstraintLayout) {
         wNtLayout.removeAllViews()
+        timeHandler.removeCallbacks(timeRunnable)
+        areClocksRunning = false
         if(Constants.showWeather) {
-            addInWeatherTimeLayout(Constants.weatherDataArray, wNtLayout, true)
+  //          addInWeatherTimeLayout(Constants.weatherDataArray, wNtLayout, true)
+            addInWeatherLayout(Constants.weatherDataArray, wNtLayout)
         }
         if (Constants.showTime) {
             addInWeatherTimeLayout(Constants.dateTimeDataArray, wNtLayout, false)
+        }
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun addInWeatherLayout(jsonArray: JSONArray, wNtLayout: ConstraintLayout) {
+        for(i in 0 until jsonArray.length()) {
+            val weatherLinearLayout = LinearLayout(ctx).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+            }
+            val jsonObject = jsonArray[i] as JSONObject
+            val x = jsonObject.get("x").toString().toInt()
+            val y = jsonObject.get("y").toString().toInt()
+            val fontSize = jsonObject.get("fontSize").toString().toFloat()
+            val layoutParams = ConstraintLayout.LayoutParams(
+                //     (layoutWidth * wMulti).toInt() , (layoutHeight.toInt() * hMulti).toInt()
+                ConstraintLayout.LayoutParams.WRAP_CONTENT, ConstraintLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                when(Constants.rotationAngel) {
+                    0f -> {
+                        startToStart = R.id.weatherAndTimeLayout
+                        topToTop = R.id.weatherAndTimeLayout
+                        marginStart = (x * wMulti).toInt()
+                        topMargin = (y * hMulti).toInt()
+                    }
+                    90f -> {
+                        endToEnd = R.id.weatherAndTimeLayout
+                        topToTop = R.id.weatherAndTimeLayout
+                        marginEnd = (y * wMulti).toInt()
+                        topMargin = (x * hMulti).toInt()
+                    }
+                    180f -> {
+                        endToEnd = R.id.weatherAndTimeLayout
+                        bottomToBottom = R.id.weatherAndTimeLayout
+                        marginEnd = (x* wMulti).toInt()
+                        bottomMargin = (y * hMulti).toInt()
+                    }
+                    270f -> {
+                        startToStart = R.id.weatherAndTimeLayout
+                        topToTop = R.id.weatherAndTimeLayout
+                        marginStart = (y * wMulti).toInt()
+                        topMargin = MainActivity.displayHeight - (x*hMulti).toInt()  - (fontSize * 3f).toInt()
+                    }
+                }
+            }
+            weatherLinearLayout.layoutParams = layoutParams
+            weatherLinearLayout.rotation = Constants.rotationAngel
+            val weatherIcon = ImageView(ctx)
+            weatherIcon.layoutParams = LinearLayout.LayoutParams(
+                (fontSize * Constants.weatherIconMultiplier).toInt(),
+                (fontSize * Constants.weatherIconMultiplier).toInt())
+            val weatherText = TextView(ctx)
+            weatherLinearLayout.addView(weatherIcon)
+            weatherLinearLayout.addView(weatherText)
+            Log.d("X and Y", "$x and $y")
+            val text = jsonObject.get("text").toString()
+            val isInFern = text.contains("F")
+            val textColor = getColorFromString(jsonObject.get("fill").toString())
+            weatherText.setTextColor(textColor)
+            weatherText.textSize = fontSize * Constants.weatherAndTimeFontSizeMultiplier
+            val latLongString = jsonObject.get("link").toString()
+            CoroutineScope(Dispatchers.Main).launch {
+                val weatherArray = getWeatherFromApiAsync(latLongString).await()
+                weatherText.text =if (isInFern) {
+                    "${Constants.convertCelcToFern(weatherArray[1].toFloat())}°F"
+                } else {
+                    "${weatherArray[1]}°C"
+                }
+                Log.d("WeatherText", "set as ${weatherArray[1]} code ${weatherArray[0]} at $x and $y")
+                val iconDrawable : Int = when(weatherArray[0]) {
+                    "0" , "1" -> R.drawable.sunny
+                    "2" , "3" -> R.drawable.partly_sunny
+                    "45" , "48" -> R.drawable.haze
+                    "51", "53", "55" -> R.drawable.haze
+                    "61" -> R.drawable.light_rain
+                    "63", "65" -> R.drawable.rain
+                    "66", "67" -> R.drawable.rain
+                    "71", "73", "75", "77", "85", "86" -> R.drawable.snow
+                    "80", "81" -> R.drawable.rain
+                    "82", "95", "96", "99" -> R.drawable.thunderstrom
+                    else -> R.drawable.sunny
+                }
+                weatherIcon.setImageDrawable(
+                    ResourcesCompat.getDrawable(ctx.resources,
+                        iconDrawable , ctx.theme))
+            }
+            wNtLayout.addView(weatherLinearLayout)
         }
     }
 
@@ -1034,7 +1125,8 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             timeText.text = "---"
     //        timeText.scaleX = jsonObject.get("scaleX").toString().toFloat()
    //         timeText.scaleY = jsonObject.get("scaleY").toString().toFloat()
-            timeText.textSize = jsonObject.get("fontSize").toString().toFloat() * Constants.weatherAndTimeFontSizeMultiplier
+            val fontSize = jsonObject.get("fontSize").toString().toFloat()
+            timeText.textSize = fontSize * Constants.weatherAndTimeFontSizeMultiplier
             val layoutParams = ConstraintLayout.LayoutParams(
            //     (layoutWidth * wMulti).toInt() , (layoutHeight.toInt() * hMulti).toInt()
                 ConstraintLayout.LayoutParams.WRAP_CONTENT, ConstraintLayout.LayoutParams.WRAP_CONTENT
@@ -1062,20 +1154,20 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                         startToStart = R.id.weatherAndTimeLayout
                         topToTop = R.id.weatherAndTimeLayout
                         marginStart = (x * wMulti).toInt()
-                        topMargin = MainActivity.displayHeight - (y*hMulti).toInt()
+                        topMargin = MainActivity.displayHeight - (y*hMulti).toInt() - (fontSize * 6f).toInt()
                     }
                 }
             }
             timeText.layoutParams = layoutParams
            //   timeText.setTextSize(10f)
             timeText.rotation = Constants.rotationAngel
-            if(isWeatherElseTime) {
+         /*   if(isWeatherElseTime) {
                 val latLongString = jsonObject.get("link").toString()
                 CoroutineScope(Dispatchers.Main).launch {
                     val temperature = getWeatherFromApiAsync(latLongString).await()
                     timeText.text = "$temperature°C"
                 }
-            } else {
+            } else {  */
                 val timeZoneString  = jsonObject.get("link").toString()
                 CoroutineScope(Dispatchers.Main).launch {
                     val time = getTimeFromAPIAsync(timeZoneString).await()
@@ -1087,7 +1179,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                         }
                     }
                 }
-            }
+        //    }
             val shadowStr = jsonObject.get("shadow").toString()
             if (shadowStr.isNotBlank() && shadowStr != "null") {
                 try {
@@ -1122,14 +1214,14 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
         return color
     }
 
-    private suspend fun getWeatherFromApiAsync(latLong: String) : Deferred<String> =
+    private suspend fun getWeatherFromApiAsync(latLong: String) : Deferred<Array<String>> =
         coroutineScope {
             async(Dispatchers.IO) {
                 try {
                     Log.d("weatherLink", latLong)
                     val latLongSplits = latLong.split(",")
                     Log.d("weatherLinkSize", "${latLongSplits.size}")
-                    if (latLongSplits.size < 2) return@async "Err"
+                    if (latLongSplits.size < 2) return@async arrayOf("Error", "err")
                     val latitude = latLongSplits[0]
                     val longitude = latLongSplits[1]
                     val apiURL = URL("https://api.open-meteo.com/v1/forecast?latitude=$latitude&longitude=$longitude&current_weather=true")
@@ -1142,11 +1234,12 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     val weatherJson = JSONObject(finalString)
                     val currentWeatherJson = weatherJson.get("current_weather") as JSONObject
                     val temperature = currentWeatherJson.get("temperature")
+                    val weatherCode = currentWeatherJson.get("weathercode")
                     Log.d("WeatherApiRes", finalString)
-                    return@async temperature.toString()
+                    return@async arrayOf(weatherCode.toString() ,temperature.toString())
                 } catch (e: Exception) {
                     Log.e("WeatherAPIError", "$e")
-                    return@async "Err"
+                    return@async arrayOf("Error", "$e")
                 }
             }
         }

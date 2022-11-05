@@ -1,6 +1,7 @@
 package com.nento.player.app
 
 import org.json.JSONArray
+import kotlin.math.roundToInt
 
 class Constants {
 
@@ -83,11 +84,12 @@ class Constants {
         var weatherDataArray = JSONArray()
         var dateTimeDataArray = JSONArray()
         const val weatherAndTimeFontSizeMultiplier = 1.1f
+        const val weatherIconMultiplier = 2f
         const val weatherAndTimeMargin = 25
         const val scaleMultiToMargin = 5
 
         const val APP_VERSION_CODE = 37
-        const val APP_VERSION_NAME = "Beta35.5"
+        const val APP_VERSION_NAME = "Beta35.7"
 
         fun getDayNameFromCal(num: Int) : String {
             return when(num) {
@@ -118,6 +120,11 @@ class Constants {
                 11 -> "December"
                 else -> "Error"
             }
+        }
+
+        fun convertCelcToFern(cel: Float) : Int {
+            val fern = (cel * 9 /5) + 32
+            return fern.roundToInt()
         }
     }
 }
