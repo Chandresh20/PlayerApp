@@ -10,8 +10,8 @@ class Constants {
         const val CONNECTION_TIMEOUT = 20L
         const val READ_TIMEOUT = 20L
         const val WRITE_TIMEOUT = 20L
-        const val BASE_URL = "https://react.tjcg.in/"
-    //    const val BASE_URL = "https://signage.mycircle.net/"
+    //    const val BASE_URL = "https://react.tjcg.in/"
+        const val BASE_URL = "https://signage.mycircle.net/"
         const val TEMPLATE_NAME ="template"
         const val PLAYLIST_FILE_NAME = "playlistObject"
         const val PLAYLIST_DIR_NAME = "Playlists"
@@ -88,8 +88,9 @@ class Constants {
         const val weatherAndTimeMargin = 25
         const val scaleMultiToMargin = 5
 
-        const val APP_VERSION_CODE = 37
-        const val APP_VERSION_NAME = "Beta35.7"
+        const val APP_VERSION_CODE = 38
+        const val APP_VERSION_NAME = "Stable1.05"
+        const val APP_PLAYSTORE = "playstore"
 
         fun getDayNameFromCal(num: Int) : String {
             return when(num) {

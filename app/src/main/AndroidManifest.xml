@@ -31,10 +31,10 @@
         android:name=".MyApplication"
         android:allowBackup="false"
         android:banner="@mipmap/banner_cor"
-        android:icon="@drawable/signage_bita"
+        android:icon="@drawable/signage"
         android:label="@string/app_name"
         android:largeHeap="true"
-        android:roundIcon="@drawable/signage_bita"
+        android:roundIcon="@drawable/signage"
         android:supportsRtl="true"
         android:usesCleartextTraffic="true"
         android:theme="@style/AppTheme">

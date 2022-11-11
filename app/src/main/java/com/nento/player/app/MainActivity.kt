@@ -594,11 +594,15 @@ class MainActivity : AppCompatActivity() {
             val id = jsonObject.get("_id")
 
             // added for weather and time
-            val isWeather = jsonObject.get("isWether")
-            Constants.showWeather = if(isWeather.toString().isBlank()) {
+            val isWeather: String = try  {
+                jsonObject.get("isWether").toString()
+            } catch(e: Exception) {
+                ""
+            }
+            Constants.showWeather = if(isWeather.isBlank()) {
                 false
             } else {
-                isWeather.toString().toBoolean()
+                isWeather.toBoolean()
             }
             if(Constants.showWeather) {
                 val weatherJson = jsonObject.get("isWetherValue")
@@ -945,7 +949,7 @@ class MainActivity : AppCompatActivity() {
             //      messageHandler.obtainMessage(0, "Checking Update").sendToTarget()
             val jsonObject = JSONObject()
             jsonObject.put("appVersion", Constants.APP_VERSION_CODE)
-            jsonObject.put("appVersionName", Constants.APP_VERSION_NAME)
+            jsonObject.put("appVersionName", Constants.APP_PLAYSTORE)
             Log.d("UpdateRequest", "$jsonObject")
             ApiService.apiService.checkForUpdate(jsonObject.toString(), "application/json")
                 .enqueue(object : Callback<UpdateResponse> {
