@@ -88,8 +88,8 @@ class Constants {
         const val weatherAndTimeMargin = 25
         const val scaleMultiToMargin = 5
 
-        const val APP_VERSION_CODE = 38
-        const val APP_VERSION_NAME = "Stable1.05"
+        const val APP_VERSION_CODE = 39
+        const val APP_VERSION_NAME = "Stable1.06"
         const val APP_PLAYSTORE = "playstore"
 
         fun getDayNameFromCal(num: Int) : String {
