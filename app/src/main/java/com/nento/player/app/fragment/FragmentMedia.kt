@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.res.ColorStateList
 import android.graphics.*
 import android.media.MediaPlayer
 import android.os.Bundle
@@ -28,6 +29,10 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.engine.bitmap_recycle.BitmapPool
 import com.bumptech.glide.load.resource.bitmap.BitmapTransformation
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.PlayerConstants
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.YouTubePlayer
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.AbstractYouTubePlayerListener
+import com.pierfrancescosoffritti.androidyoutubeplayer.core.player.listeners.YouTubePlayerListener
 import org.json.JSONArray
 import org.json.JSONObject
 import java.net.URL
@@ -92,6 +97,9 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
         timeRunnable = object : Runnable {
             val cal = Calendar.getInstance()
             override fun run() {
+                if(!areClocksRunning) {
+                    return
+                }
                 for(clock in allClocks) {
                     cal.timeInMillis = clock.time
                     val hour24 = cal.get(Calendar.HOUR_OF_DAY)
@@ -114,11 +122,12 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                         if (amPm == 1) {
                             amPMS = "PM"
                         }
-                        "$hour12:$min $amPMS, ${Constants.getDayNameFromCal(dayName)}\n${Constants.getMonthNameFromCal(month)} $date, $year"
+                        "$hour12:$min $amPMS, ${Constants.getDayNameFromCal(dayName)}, ${Constants.getMonthNameFromCal(month)} $date, $year"
                     } else {
-                        "$hour24:$min, ${Constants.getDayNameFromCal(dayName)}\n${Constants.getMonthNameFromCal(month)} $date, $year"
+                        "$hour24:$min, ${Constants.getDayNameFromCal(dayName)}, ${Constants.getMonthNameFromCal(month)} $date, $year"
                     }
                     clock.textView.text = clockText
+                    clock.textView.setBackgroundColor(clock.bgColor)
                     clock.time += 30000
                 }
                 timeHandler.postDelayed(this, 30000)
@@ -247,6 +256,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             } ,2000)  // video play needs some time directly showing video/textureView
             // make the app frozen for few moment. that's why it delayed
             Log.d("FileToPlay", file)
+            setWeatherAndTimeLayout(weatherAndTimeLayout)
             true
         }
 
@@ -384,6 +394,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             override fun onReceive(p0: Context?, p1: Intent?) {
                 Log.d("FragmentMedia", "Media change update")
                 currentMedia = -1
+                areClocksRunning = false
                 CoroutineScope(Dispatchers.Main).launch {
                     proBar.visibility = View.VISIBLE
                     while (imRunning) {
@@ -722,6 +733,97 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                 delay(1000)
                             }
                         }
+                        Constants.MEDIA_YOUTUBE -> {
+                            if (youView == null) {
+                                youView = YouTubePlayerView(ctx)
+                                youView?.layoutParams = LinearLayout.LayoutParams(
+                                    layout.width,
+                                    layout.height
+                                )
+                                val videoURL = mediaInfo.fileName
+                                val keyStartIndex = videoURL?.indexOf("watch?v=") ?: 0
+                                val keyLength = 11
+                                val videoKey = videoURL?.substring(keyStartIndex+8, keyStartIndex +8 + keyLength)
+                                youView?.addYouTubePlayerListener(object :
+                                    AbstractYouTubePlayerListener() {
+                                    override fun onReady(youTubePlayer: YouTubePlayer) {
+                                        Log.d("YOUTUBEPlayer", "Ready")
+                                        youTubePlayer.loadVideo(videoKey ?: "null",0f)
+                                        youTubePlayer.addListener(object : YouTubePlayerListener {
+
+                                            var vidDuration = 0f
+
+                                            override fun onApiChange(youTubePlayer: YouTubePlayer) { }
+
+                                            override fun onCurrentSecond(
+                                                youTubePlayer: YouTubePlayer,
+                                                second: Float
+                                            ) {
+                                                Log.d("CurrentSecond", "$second")
+                                                if (vidDuration > 0 && (second >= (vidDuration - 1))) {
+                                                    youView?.release()
+                                                    youView = null
+                                                }
+                                            }
+
+                                            override fun onError(
+                                                youTubePlayer: YouTubePlayer,
+                                                error: PlayerConstants.PlayerError
+                                            ) {
+                                            }
+
+                                            override fun onPlaybackQualityChange(
+                                                youTubePlayer: YouTubePlayer,
+                                                playbackQuality: PlayerConstants.PlaybackQuality
+                                            ) {
+                                            }
+
+                                            override fun onPlaybackRateChange(
+                                                youTubePlayer: YouTubePlayer,
+                                                playbackRate: PlayerConstants.PlaybackRate
+                                            ) {
+                                            }
+
+                                            override fun onReady(youTubePlayer: YouTubePlayer) {
+                                                Log.d("YOUTUBE", "Ready")
+                                            }
+
+                                            override fun onStateChange(
+                                                youTubePlayer: YouTubePlayer,
+                                                state: PlayerConstants.PlayerState
+                                            ) {
+                                            }
+
+                                            override fun onVideoDuration(
+                                                youTubePlayer: YouTubePlayer,
+                                                duration: Float
+                                            ) {
+                                                vidDuration = duration
+                                                Log.d("YOUTUBE", "Duration: $duration")
+                                            }
+
+                                            override fun onVideoId(
+                                                youTubePlayer: YouTubePlayer,
+                                                videoId: String
+                                            ) { }
+                                            override fun onVideoLoadedFraction(
+                                                youTubePlayer: YouTubePlayer,
+                                                loadedFraction: Float
+                                            ) { }
+                                        })
+                                    }
+                                })
+                                layout.addView(youView)
+                            } else {
+                                layout.addView(youView)
+                            }
+                            for (i in 0 until (mediaInfo.timeInSeconds ?: 5)) {
+                                if (currentMedia != CURRENT_CUSTOM) {
+                                    break
+                                }
+                                delay(1000)
+                            }
+                        }
                         Constants.MEDIA_WEB_PAGE -> {
                             /*   if (customWebView == null) {
                                    customWebView = WebView(ctx)
@@ -753,102 +855,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                    }
                                    delay(1000)
                                }  */
-                        }
-                        Constants.MEDIA_YOUTUBE -> {
-                            /*    if (youView == null) {
-                                    youView = YouTubePlayerView(ctx)
-                                    youView?.layoutParams = LinearLayout.LayoutParams(
-                                        layout.width,
-                                        layout.height
-                                    )
-                                    val videoURL = media.fileName
-                                    val keyStartIndex = videoURL?.indexOf("watch?v=") ?: 0
-                                    val keyLength = 11
-                                    val videoKey = videoURL?.substring(keyStartIndex+8, keyStartIndex +8 + keyLength)
-                                    youView?.addYouTubePlayerListener(object :
-                                        AbstractYouTubePlayerListener() {
-                                        override fun onReady(youTubePlayer: YouTubePlayer) {
-                                            Log.d("YOUTUBEPlayer", "Ready")
-                                            youTubePlayer.loadVideo(videoKey ?: "null",0f)
-                                            youTubePlayer.addListener(object : YouTubePlayerListener {
-
-                                                var vidDuration = 0f
-
-                                                override fun onApiChange(youTubePlayer: YouTubePlayer) { }
-
-                                                override fun onCurrentSecond(
-                                                    youTubePlayer: YouTubePlayer,
-                                                    second: Float
-                                                ) {
-                                                    Log.d("CurrentSecond", "$second")
-                                                    if (vidDuration > 0 && (second >= (vidDuration - 1))) {
-                                                        youView?.release()
-                                                        youView = null
-                                                    }
-                                                }
-
-                                                override fun onError(
-                                                    youTubePlayer: YouTubePlayer,
-                                                    error: PlayerConstants.PlayerError
-                                                ) {
-                                                }
-
-                                                override fun onPlaybackQualityChange(
-                                                    youTubePlayer: YouTubePlayer,
-                                                    playbackQuality: PlayerConstants.PlaybackQuality
-                                                ) {
-                                                }
-
-                                                override fun onPlaybackRateChange(
-                                                    youTubePlayer: YouTubePlayer,
-                                                    playbackRate: PlayerConstants.PlaybackRate
-                                                ) {
-                                                }
-
-                                                override fun onReady(youTubePlayer: YouTubePlayer) {
-                                                    Log.d("YOUTUBE", "Ready")
-                                                }
-
-                                                override fun onStateChange(
-                                                    youTubePlayer: YouTubePlayer,
-                                                    state: PlayerConstants.PlayerState
-                                                ) {
-                                                }
-
-                                                override fun onVideoDuration(
-                                                    youTubePlayer: YouTubePlayer,
-                                                    duration: Float
-                                                ) {
-                                                    vidDuration = duration
-                                                    Log.d("YOUTUBE", "Duration: $duration")
-                                                }
-
-                                                override fun onVideoId(
-                                                    youTubePlayer: YouTubePlayer,
-                                                    videoId: String
-                                                ) {
-
-                                                }
-
-                                                override fun onVideoLoadedFraction(
-                                                    youTubePlayer: YouTubePlayer,
-                                                    loadedFraction: Float
-                                                ) {
-                                                }
-
-                                            })
-                                        }
-                                    })
-                                    layout.addView(youView)
-                                } else {
-                                    layout.addView(youView)
-                                }
-                                for (i in 0 until (media.timeInSeconds ?: 5)) {
-                                    if (currentMedia != CURRENT_CUSTOM) {
-                                        break
-                                    }
-                                    delay(1000)
-                                }  */
                         }
                         else -> { Log.e("CustomLayout", "Unknown media type")}
                     }
@@ -1010,75 +1016,153 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
 
     private fun setWeatherAndTimeLayout(wNtLayout: ConstraintLayout) {
         wNtLayout.removeAllViews()
-        timeHandler.removeCallbacks(timeRunnable)
-        areClocksRunning = false
+  //      timeHandler.removeCallbacks(timeRunnable)
+   //     areClocksRunning = false
         if(Constants.showWeather) {
   //          addInWeatherTimeLayout(Constants.weatherDataArray, wNtLayout, true)
-            addInWeatherLayout(Constants.weatherDataArray, wNtLayout)
+            addInWeatherLayout2(Constants.weatherDataArray, wNtLayout)
         }
         if (Constants.showTime) {
-            addInWeatherTimeLayout(Constants.dateTimeDataArray, wNtLayout, false)
+            addInWeatherTimeLayout(Constants.dateTimeDataArray, wNtLayout)
         }
     }
 
-    @SuppressLint("SetTextI18n")
-    private fun addInWeatherLayout(jsonArray: JSONArray, wNtLayout: ConstraintLayout) {
+    private fun addInWeatherLayout2(jsonArray: JSONArray, wNtLayout: ConstraintLayout) {
         for(i in 0 until jsonArray.length()) {
-            val weatherLinearLayout = LinearLayout(ctx).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
+            val weatherText = TextView(ctx)
+            val jsonObject : JSONObject = try {
+                    jsonArray[i] as JSONObject
+                } catch (e:Exception) { JSONObject() }
+            val textX : Int=  try { jsonObject.get("x").toString().toInt()
+            } catch (e:Exception) { 0 }
+            val textY = try { jsonObject.get("y").toString().toInt()
+            } catch (e:Exception) { 0 }
+            val fontSize : Float = try {
+                jsonObject.get("fontSize").toString().toFloat()
+            } catch (e:Exception) {
+                15f
             }
-            val jsonObject = jsonArray[i] as JSONObject
-            val x = jsonObject.get("x").toString().toInt()
-            val y = jsonObject.get("y").toString().toInt()
-            val fontSize = jsonObject.get("fontSize").toString().toFloat()
             val layoutParams = ConstraintLayout.LayoutParams(
-                //     (layoutWidth * wMulti).toInt() , (layoutHeight.toInt() * hMulti).toInt()
                 ConstraintLayout.LayoutParams.WRAP_CONTENT, ConstraintLayout.LayoutParams.WRAP_CONTENT
             ).apply {
                 when(Constants.rotationAngel) {
                     0f -> {
                         startToStart = R.id.weatherAndTimeLayout
                         topToTop = R.id.weatherAndTimeLayout
-                        marginStart = (x * wMulti).toInt()
-                        topMargin = (y * hMulti).toInt()
+                        marginStart = (textX * wMulti).toInt()
+                        topMargin = (textY * hMulti).toInt()
                     }
                     90f -> {
                         endToEnd = R.id.weatherAndTimeLayout
                         topToTop = R.id.weatherAndTimeLayout
-                        marginEnd = (y * wMulti).toInt()
-                        topMargin = (x * hMulti).toInt()
+                        marginEnd = (textY * wMulti).toInt()
+                        topMargin = (textX * hMulti).toInt()
                     }
                     180f -> {
                         endToEnd = R.id.weatherAndTimeLayout
                         bottomToBottom = R.id.weatherAndTimeLayout
-                        marginEnd = (x* wMulti).toInt()
-                        bottomMargin = (y * hMulti).toInt()
+                        marginEnd = (textX * wMulti).toInt()
+                        bottomMargin = (textY * hMulti).toInt()
                     }
                     270f -> {
                         startToStart = R.id.weatherAndTimeLayout
                         topToTop = R.id.weatherAndTimeLayout
-                        marginStart = (y * wMulti).toInt()
-                        topMargin = MainActivity.displayHeight - (x*hMulti).toInt()  - (fontSize * 3f).toInt()
+                        marginStart = (textY * wMulti).toInt()
+                        topMargin = MainActivity.displayHeight - (textX*hMulti).toInt()  - (fontSize * 3f).toInt()
                     }
                 }
             }
-            weatherLinearLayout.layoutParams = layoutParams
-            weatherLinearLayout.rotation = Constants.rotationAngel
-            val weatherIcon = ImageView(ctx)
-            weatherIcon.layoutParams = LinearLayout.LayoutParams(
-                (fontSize * Constants.weatherIconMultiplier).toInt(),
-                (fontSize * Constants.weatherIconMultiplier).toInt())
-            val weatherText = TextView(ctx)
-            weatherLinearLayout.addView(weatherIcon)
-            weatherLinearLayout.addView(weatherText)
-            Log.d("X and Y", "$x and $y")
-            val text = jsonObject.get("text").toString()
+            weatherText.layoutParams = layoutParams
+            weatherText.includeFontPadding = false
+            weatherText.rotation = Constants.rotationAngel
+            val text = try { jsonObject.get("text").toString()
+            } catch (e:Exception) { "" }
             val isInFern = text.contains("F")
-            val textColor = getColorFromString(jsonObject.get("fill").toString())
+            val textColor = getColorFromString( try
+                { jsonObject.get("fill").toString()
+                } catch (e:Exception) { "rgba(0, 0, 0, 1)" })
             weatherText.setTextColor(textColor)
-            weatherText.textSize = fontSize * Constants.weatherAndTimeFontSizeMultiplier
-            val latLongString = jsonObject.get("link").toString()
+            weatherText.textSize = fontSize
+            val latLongString = try {
+                jsonObject.get("link").toString()
+            } catch (e:Exception) { ""}
+
+            // set layout params for icon
+            val weatherIconScaling : Float = when(MainActivity.displayHeight) {
+                in 0..799 -> Constants.weatherIconScalingConstant720
+                in 800..1200 -> Constants.weatherIconScalingConstant1080
+                in 1200..2400 -> Constants.weatherIconScalingConstant4k
+                else -> 1f
+            }
+            val weatherIcon = ImageView(ctx)
+            val iconJson : JSONObject = try {
+                    jsonObject.get("icon") as JSONObject
+                } catch (e: Exception) {
+                    JSONObject()
+                }
+            val iconX =  try { iconJson.get("x").toString().toFloat()
+                } catch (e:Exception) { 0f }
+            val iconY = try {
+                iconJson.get("y").toString().toFloat()
+                } catch (e:Exception) { 0f }
+            val iconColor = getColorFromString(
+                try { iconJson.get("fill").toString()
+                } catch (e:Exception) { "rgba(0, 0, 0, 1)" })
+            val iconScaleX : Float = try {
+                iconJson.get("scaleX").toString().toFloat() * weatherIconScaling
+            } catch (e: Exception) {
+                1f
+            }
+            val iconScaleY : Float = try {
+                iconJson.get("scaleY").toString().toFloat() * weatherIconScaling
+            } catch (e: Exception) {
+                1f
+            }
+            val iconSize = 30
+            weatherIcon.imageTintList = ColorStateList.valueOf(iconColor)
+            val layoutParamsIcon = ConstraintLayout.LayoutParams(
+                iconSize,iconSize
+            ).apply {
+                when(Constants.rotationAngel) {
+                    0f -> {
+                        startToStart = R.id.weatherAndTimeLayout
+                        topToTop = R.id.weatherAndTimeLayout
+                        marginStart = (iconX * wMulti +
+                                (((iconSize * iconScaleX) - iconSize) / 2)).toInt()
+                        topMargin = (iconY * hMulti +
+                                (((iconSize * iconScaleY) - iconSize)  / 2)).toInt()
+                    }
+                    90f -> {
+                        endToEnd = R.id.weatherAndTimeLayout
+                        topToTop = R.id.weatherAndTimeLayout
+                        marginEnd = (iconY * wMulti  +
+                                (((iconSize * iconScaleY) - iconSize)  / 2)).toInt()
+                        topMargin = (iconX * hMulti +
+                                (((iconSize * iconScaleX) - iconSize) / 2)).toInt()
+                    }
+                    180f -> {
+                        endToEnd = R.id.weatherAndTimeLayout
+                        bottomToBottom = R.id.weatherAndTimeLayout
+                        marginEnd = (iconX * wMulti +
+                                (((iconSize * iconScaleX) - iconSize) / 2)).toInt()
+                        bottomMargin = (iconY * hMulti +
+                                (((iconSize * iconScaleY) - iconSize) / 2)).toInt()
+                    }
+                    270f -> {
+                        startToStart = R.id.weatherAndTimeLayout
+                        topToTop = R.id.weatherAndTimeLayout
+                        marginStart = (iconY * wMulti +
+                                (((iconSize * iconScaleY) - iconSize) / 2)).toInt()
+                        topMargin = MainActivity.displayHeight - (iconX*hMulti +
+                                (((iconSize * iconScaleX) - iconSize) / 2)).toInt()  - (fontSize * 3f).toInt()
+                    }
+                }
+            }
+            weatherIcon.layoutParams = layoutParamsIcon
+            weatherIcon.scaleX = iconScaleX
+            weatherIcon.scaleY = iconScaleY
+            weatherIcon.rotation = Constants.rotationAngel
+
             CoroutineScope(Dispatchers.Main).launch {
                 val weatherArray = getWeatherFromApiAsync(latLongString).await()
                 weatherText.text =if (isInFern) {
@@ -1086,7 +1170,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 } else {
                     "${weatherArray[1]}°C"
                 }
-                Log.d("WeatherText", "set as ${weatherArray[1]} code ${weatherArray[0]} at $x and $y")
                 val iconDrawable : Int = when(weatherArray[0]) {
                     "0" , "1" -> R.drawable.sunny
                     "2" , "3" -> R.drawable.partly_sunny
@@ -1103,13 +1186,15 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 weatherIcon.setImageDrawable(
                     ResourcesCompat.getDrawable(ctx.resources,
                         iconDrawable , ctx.theme))
+                wNtLayout.addView(weatherIcon)
             }
-            wNtLayout.addView(weatherLinearLayout)
+            wNtLayout.addView(weatherText)
         }
     }
 
     @SuppressLint("SetTextI18n")
-    private fun addInWeatherTimeLayout(jsonArray: JSONArray, wNtLayout: ConstraintLayout, isWeatherElseTime : Boolean) {
+    private fun addInWeatherTimeLayout(jsonArray: JSONArray, wNtLayout: ConstraintLayout) {
+        allClocks.clear()
         for(i in 0 until jsonArray.length()) {
             val timeText = TextView(ctx)
             val jsonObject = jsonArray[i] as JSONObject
@@ -1120,15 +1205,18 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             val timeInAMPM = text.contains("AM ") || text.contains("PM ")
             val textColor = getColorFromString(jsonObject.get("fill").toString())
             timeText.setTextColor(textColor)
-       //     val layoutWidth = jsonObject.get("width").toString().toFloat()
-       //     val layoutHeight = jsonObject.get("height").toString().toFloat()
             timeText.text = "---"
-    //        timeText.scaleX = jsonObject.get("scaleX").toString().toFloat()
-   //         timeText.scaleY = jsonObject.get("scaleY").toString().toFloat()
             val fontSize = jsonObject.get("fontSize").toString().toFloat()
-            timeText.textSize = fontSize * Constants.weatherAndTimeFontSizeMultiplier
+            val bgColorString: String = try {
+                jsonObject.get("backgroundColor").toString()
+            } catch (e: Exception) {
+                "rgba(0,0,0,0)"
+            }
+            val bgColor = getColorFromString(bgColorString)
+            timeText.textSize = fontSize
+            timeText.includeFontPadding = false
+            timeText.setLineSpacing(Constants.weatherAndTimeTextLineSpacing1080, 1f)
             val layoutParams = ConstraintLayout.LayoutParams(
-           //     (layoutWidth * wMulti).toInt() , (layoutHeight.toInt() * hMulti).toInt()
                 ConstraintLayout.LayoutParams.WRAP_CONTENT, ConstraintLayout.LayoutParams.WRAP_CONTENT
             ).apply {
                 when(Constants.rotationAngel) {
@@ -1159,27 +1247,14 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 }
             }
             timeText.layoutParams = layoutParams
-           //   timeText.setTextSize(10f)
             timeText.rotation = Constants.rotationAngel
-         /*   if(isWeatherElseTime) {
-                val latLongString = jsonObject.get("link").toString()
-                CoroutineScope(Dispatchers.Main).launch {
-                    val temperature = getWeatherFromApiAsync(latLongString).await()
-                    timeText.text = "$temperature°C"
-                }
-            } else {  */
                 val timeZoneString  = jsonObject.get("link").toString()
                 CoroutineScope(Dispatchers.Main).launch {
                     val time = getTimeFromAPIAsync(timeZoneString).await()
                     if (time > 0) {
-                        allClocks.add(ClockObject(time, timeText, !timeInAMPM))
-                        if (!areClocksRunning) {
-                            timeHandler.post(timeRunnable)
-                            areClocksRunning = true
-                        }
+                        allClocks.add(ClockObject(time, timeText, !timeInAMPM, bgColor))
                     }
                 }
-        //    }
             val shadowStr = jsonObject.get("shadow").toString()
             if (shadowStr.isNotBlank() && shadowStr != "null") {
                 try {
@@ -1195,6 +1270,9 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             }
             wNtLayout.addView(timeText)
         }
+        timeHandler.removeCallbacks(timeRunnable)
+        areClocksRunning = true
+        timeHandler.postDelayed(timeRunnable, 2000)
     }
 
     private fun getColorFromString(str: String): Int {
@@ -1204,7 +1282,8 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             var finalString = str.substring(index +1, str.length - 1)
             finalString.replace(" ", "").also { finalString = it }
             val colorsArray = finalString.split(",")
-            color = Color.rgb(
+            color = Color.argb(
+                (colorsArray[3].toFloat() * 255).toInt(),
                 colorsArray[0].toInt(),
                 colorsArray[1].toInt(),
                 colorsArray[2].toInt()
@@ -1253,12 +1332,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     if(timeZone.lowercase() == cal.timeZone.id.lowercase()) {
                         Log.d("TimeZone", "TimeZone same no api call")
                         return@async cal.timeInMillis
-                    /*    val hour = cal.get(Calendar.HOUR_OF_DAY).toString()
-                        var minute = cal.get(Calendar.MINUTE).toString()
-                        if (minute.length == 1) {
-                            minute = "0$minute"
-                        }
-                        timeToReturn += "$hour : $minute"  */
                     } else {
                         val url = URL("http://worldtimeapi.org/api/timezone/$timeZone")
                         val connection = url.openConnection()
@@ -1281,20 +1354,11 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                         } else {
                             utcTime + millOffset
                         }
-                 /*       cal.timeInMillis = timeToDisplayMill
-               //         Log.d("TimeZone", "$offsetHour : $offsetMinute,  ${cal.get(Calendar.HOUR_OF_DAY)} : ${cal.get(Calendar.MINUTE)}")
-               //         Log.d("Timezone","utc :$utcTime, final offset :$millOffset")
-                        val hour = cal.get(Calendar.HOUR_OF_DAY).toString()
-                        var minute = cal.get(Calendar.MINUTE).toString()
-                        if (minute.length == 1) {
-                            minute = "0$minute"
-                        }
-                        timeToReturn += "$hour : $minute"  */
                         return@async timeToDisplayMill
                     }
                 } catch (e: Exception) {
                     Log.e("TimeZoneAPI", "$e")
-                    return@async -1;
+                    return@async -1
                 }
             }
         }
@@ -1320,7 +1384,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
         }
     }
 
-    class ClockObject(var time: Long, val textView: TextView, val is24Hours: Boolean)
+    class ClockObject(var time: Long, val textView: TextView, val is24Hours: Boolean, val bgColor: Int)
 
     companion object {
         const val PLAY_TYPE_IMAGE = 0

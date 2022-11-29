@@ -85,7 +85,6 @@ class MainScreenFragment : Fragment() {
             override fun onReceive(p0: Context?, p1: Intent?) {
                 try {
                     findNavController().navigate(R.id.action_mainScreenFragment_to_navigation_media)
-              //      startActivity(Intent(ctx, MediaActivity::class.java))
                 } catch (e: Exception) {
                     Log.e("MainScreen", "navControllerError $e")
                 }

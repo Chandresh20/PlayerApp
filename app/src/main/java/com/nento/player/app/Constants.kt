@@ -10,8 +10,8 @@ class Constants {
         const val CONNECTION_TIMEOUT = 20L
         const val READ_TIMEOUT = 20L
         const val WRITE_TIMEOUT = 20L
-    //    const val BASE_URL = "https://react.tjcg.in/"
-        const val BASE_URL = "https://signage.mycircle.net/"
+        const val BASE_URL = "https://react.tjcg.in/"
+    //    const val BASE_URL = "https://signage.mycircle.net/"
         const val TEMPLATE_NAME ="template"
         const val PLAYLIST_FILE_NAME = "playlistObject"
         const val PLAYLIST_DIR_NAME = "Playlists"
@@ -73,6 +73,9 @@ class Constants {
         const val SOCKET_ROTATE_SCREEN = "ROTATE_SCREEN"
         const val SOCKET_SHOW_HIDE_SCREEN_NUMBER = "SHOW_HIDE_SCREEN_NUMBER"
 
+        //added after wifi-service
+        const val PLAYER_APP_CLOSE_BROADCAST = "com.player.action.close"
+
         var screenID = ""
         var playerId = ""
         var deviceMemory = "0B"
@@ -83,14 +86,19 @@ class Constants {
         var showTime = false
         var weatherDataArray = JSONArray()
         var dateTimeDataArray = JSONArray()
-        const val weatherAndTimeFontSizeMultiplier = 1.1f
-        const val weatherIconMultiplier = 2f
+    //    const val weatherAndTimeFontSizeMultiplier = 1.1f
+    //    const val weatherIconMultiplier = 2f
         const val weatherAndTimeMargin = 25
         const val scaleMultiToMargin = 5
+   //     const val weatherAndTimeFontSizeMultiplier720 = 1f
+        const val weatherAndTimeTextLineSpacing1080 = 10f  // will be same for all screens
+        const val weatherIconScalingConstant1080 = 33.3f
+        const val weatherIconScalingConstant720 = 22.2f
+        const val weatherIconScalingConstant4k = 66.6f
 
         const val APP_VERSION_CODE = 39
-        const val APP_VERSION_NAME = "Stable1.06"
-        const val APP_PLAYSTORE = "playstore"
+        const val APP_VERSION_NAME = "Beta36.2"
+        const val APP_PLAYSTORE = ""
 
         fun getDayNameFromCal(num: Int) : String {
             return when(num) {

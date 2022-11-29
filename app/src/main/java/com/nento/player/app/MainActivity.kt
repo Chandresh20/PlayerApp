@@ -1,5 +1,6 @@
 package com.nento.player.app
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.app.AlarmManager
@@ -211,6 +212,7 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(applicationContext, "App is going to restart... ", Toast.LENGTH_LONG).show()
             restartAppForEveryOneHour()
         }, 3600000)
+
     }
 
     @SuppressLint("UnspecifiedImmutableFlag")
@@ -447,6 +449,8 @@ class MainActivity : AppCompatActivity() {
                 putString(Constants.PREFS_CONTENT_ID, mediaId.toString())
                 }.apply()
             deleteCustomDir()
+            Constants.showWeather = false
+            Constants.showTime = false
             val templateIntent = Intent(Constants.NEW_PLAYLIST_READY_BROADCAST)
             sendBroadcast(templateIntent)
         }
@@ -461,7 +465,7 @@ class MainActivity : AppCompatActivity() {
                         Log.d("imDownloading", "true")
                     }
                     val downloadDir = File(storageDir, Constants.DOWNLOAD_CONTENT_DIR)
-                    val playlistDir = File(storageDir, Constants.PLAYLIST_DIR_NAME)
+                    var playlistDir = File(storageDir, Constants.PLAYLIST_DIR_NAME)
                     if (!downloadDir.exists()) {
                         downloadDir.mkdirs()
                     }
@@ -478,7 +482,7 @@ class MainActivity : AppCompatActivity() {
                                 || (item.mediaName ?: "null").contains(".mov") || (item.mediaName ?: "null").contains(".webm")
                                 || (item.mediaName ?: "null").contains(".flv")) {
                                 if (playlistDir.exists()) {
-                                    val allFilesNames = playlistDir.list();
+                                    val allFilesNames = playlistDir.list()
                                     if (allFilesNames != null && allFilesNames.contains(item.mediaName)) {
                                         Log.d("CheckPLaylisr", "${item.mediaName} already available")
                                         existedFileLength = File(playlistDir, item.mediaName!!).length()
@@ -551,7 +555,7 @@ class MainActivity : AppCompatActivity() {
                             Log.d("Finished File", "${item.mediaName} : $totalWrite")
                         }
 
-                        val playlistDir = File(storageDir, Constants.PLAYLIST_DIR_NAME)
+                        playlistDir = File(storageDir, Constants.PLAYLIST_DIR_NAME)
                         if (!playlistDir.exists()) playlistDir.mkdirs()
                         messageHandler.obtainMessage(0, "Copying data").sendToTarget()
                         for (downFile in (downloadDir.listFiles() ?: emptyArray())) {
@@ -981,6 +985,11 @@ class MainActivity : AppCompatActivity() {
                                     messageHandler.obtainMessage(0, "").sendToTarget()
                                 }, 3000)
                             }
+                        } else {
+                            messageHandler.obtainMessage(0, "No Update response").sendToTarget()
+                            updateHandler2.postDelayed( {
+                                messageHandler.obtainMessage(0, "").sendToTarget()
+                            }, 3000)
                         }
                     }
 
@@ -1282,11 +1291,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.M)
     private fun checkPermission() {
         if (ContextCompat.checkSelfPermission(
-                this, android.Manifest.permission.REQUEST_INSTALL_PACKAGES) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(arrayOf(android.Manifest.permission.REQUEST_INSTALL_PACKAGES), 100)
+                this, Manifest.permission.REQUEST_INSTALL_PACKAGES) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(Manifest.permission.REQUEST_INSTALL_PACKAGES), 100)
             Log.d("Permission", "Permission required")
         } else {
             Log.d("Permission", "Permission granted")
@@ -1303,6 +1311,7 @@ class MainActivity : AppCompatActivity() {
         }
         if (!onPauseCalledOnce) {
             onPauseCalledOnce = true
+            Log.d("OnPause", "Called once")
         } else {
     //        mSocket?.disconnect()
    //         Log.d("onPause", "Socket Disconnected")
