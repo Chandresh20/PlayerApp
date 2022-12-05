@@ -112,12 +112,29 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     if (min.length == 1) {
                         min = "0$min"
                     }
-                    val dayName = cal.get(Calendar.DAY_OF_WEEK)
-                    val month = cal.get(Calendar.MONTH)
-                    val date = cal.get(Calendar.DATE)
-                    val year = cal.get(Calendar.YEAR)
+
                     Log.d("TimeRunnable", "updated")
-                    val clockText : String = if (!clock.is24Hours) {
+
+                    val clockText : String  = if(clock.isTimeElseDate) {
+                        var amPmS = ""
+                        if(!clock.is24Hours) {
+                            amPmS = "AM"
+                            if(amPm == 1) {
+                                amPmS = "PM"
+                            }
+                            "$hour12:$min $amPmS"
+                         } else {
+                            "$hour24:$min"
+                        }
+                    } else {
+                        val dayName = cal.get(Calendar.DAY_OF_WEEK)
+                        val month = cal.get(Calendar.MONTH)
+                        val date = cal.get(Calendar.DATE)
+                        val year = cal.get(Calendar.YEAR)
+                        "${Constants.getDayNameFromCal(dayName)}, ${Constants.getMonthNameFromCal(month)} $date, $year"
+                    }
+
+                 /*   val clockText : String = if (!clock.is24Hours) {
                         var amPMS = "AM"
                         if (amPm == 1) {
                             amPMS = "PM"
@@ -125,7 +142,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                         "$hour12:$min $amPMS, ${Constants.getDayNameFromCal(dayName)}, ${Constants.getMonthNameFromCal(month)} $date, $year"
                     } else {
                         "$hour24:$min, ${Constants.getDayNameFromCal(dayName)}, ${Constants.getMonthNameFromCal(month)} $date, $year"
-                    }
+                    }  */
                     clock.textView.text = clockText
                     clock.textView.setBackgroundColor(clock.bgColor)
                     clock.time += 30000
@@ -469,22 +486,27 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
     }
 
     private fun playOnMediaPlayer(file: String) {
-        mediaPlayer.reset()
-        mediaPlayer.setDataSource(file)
-        mediaPlayer.prepareAsync()
-        mediaPlayer.setOnPreparedListener {
-            it.start()
-        }
-        mediaPlayer.setOnVideoSizeChangedListener { _, width, height ->
-            if (Constants.rotationAngel == 90f || Constants.rotationAngel == 270f) {
-                playVideoVertically(width, height, playlistTextureView)
-            } else {
-                playVideoNormally(width, height, playlistTextureView)
+        try {
+            mediaPlayer.reset()
+            mediaPlayer.setDataSource(file)
+            mediaPlayer.prepareAsync()
+            mediaPlayer.setOnPreparedListener {
+                it.start()
             }
+            mediaPlayer.setOnVideoSizeChangedListener { _, width, height ->
+                if (Constants.rotationAngel == 90f || Constants.rotationAngel == 270f) {
+                    playVideoVertically(width, height, playlistTextureView)
+                } else {
+                    playVideoNormally(width, height, playlistTextureView)
+                }
+            }
+            mediaPlayer.setOnCompletionListener {
+                mediaPlayer.stop()
+            }
+        } catch (e: Exception) {
+            Log.e("playOnMediaPlayer", "$e")
         }
-        mediaPlayer.setOnCompletionListener {
-            mediaPlayer.stop()
-        }
+
     }
 
     override fun onSurfaceTextureSizeChanged(p0: SurfaceTexture, p1: Int, p2: Int) {
@@ -759,11 +781,11 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                                 youTubePlayer: YouTubePlayer,
                                                 second: Float
                                             ) {
-                                                Log.d("CurrentSecond", "$second")
-                                                if (vidDuration > 0 && (second >= (vidDuration - 1))) {
+                                                // removed for youtube loop
+                                            /*    if (vidDuration > 0 && (second >= (vidDuration - 1))) {
                                                     youView?.release()
                                                     youView = null
-                                                }
+                                                }  */
                                             }
 
                                             override fun onError(
@@ -792,6 +814,10 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                                 youTubePlayer: YouTubePlayer,
                                                 state: PlayerConstants.PlayerState
                                             ) {
+                                                Log.d("YoutubePlayerState", state.toString())
+                                                if(state == PlayerConstants.PlayerState.ENDED) {
+                                                    youTubePlayer.seekTo(0f)
+                                                }
                                             }
 
                                             override fun onVideoDuration(
@@ -817,12 +843,12 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                             } else {
                                 layout.addView(youView)
                             }
-                            for (i in 0 until (mediaInfo.timeInSeconds ?: 5)) {
+                         /*   for (i in 0 until (mediaInfo.timeInSeconds ?: 5)) {
                                 if (currentMedia != CURRENT_CUSTOM) {
                                     break
                                 }
                                 delay(1000)
-                            }
+                            }  */
                         }
                         Constants.MEDIA_WEB_PAGE -> {
                             /*   if (customWebView == null) {
@@ -1203,6 +1229,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             Log.d("X and Y", "$x and $y")
             val text = jsonObject.get("text").toString()
             val timeInAMPM = text.contains("AM ") || text.contains("PM ")
+            val isTimeElseDate = text.contains(":")
             val textColor = getColorFromString(jsonObject.get("fill").toString())
             timeText.setTextColor(textColor)
             timeText.text = "---"
@@ -1252,7 +1279,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 CoroutineScope(Dispatchers.Main).launch {
                     val time = getTimeFromAPIAsync(timeZoneString).await()
                     if (time > 0) {
-                        allClocks.add(ClockObject(time, timeText, !timeInAMPM, bgColor))
+                        allClocks.add(ClockObject(time, timeText, !timeInAMPM, bgColor, isTimeElseDate))
                     }
                 }
             val shadowStr = jsonObject.get("shadow").toString()
@@ -1384,7 +1411,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
         }
     }
 
-    class ClockObject(var time: Long, val textView: TextView, val is24Hours: Boolean, val bgColor: Int)
+    class ClockObject(var time: Long, val textView: TextView, val is24Hours: Boolean, val bgColor: Int, val isTimeElseDate : Boolean)
 
     companion object {
         const val PLAY_TYPE_IMAGE = 0

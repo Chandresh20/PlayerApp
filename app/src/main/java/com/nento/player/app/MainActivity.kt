@@ -5,6 +5,8 @@ import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.app.AlarmManager
 import android.app.PendingIntent
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothManager
 import android.content.*
 import android.hardware.display.DisplayManager
 import android.net.Uri
@@ -37,9 +39,11 @@ import android.view.*
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import androidx.core.view.drawToBitmap
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.nento.player.app.Constants.Companion.onSplashScreen
 import com.nento.player.app.fragment.FragmentMedia
 import io.sentry.Sentry
@@ -76,6 +80,20 @@ class MainActivity : AppCompatActivity() {
     private lateinit var offlineIcon : ImageView
     private val blinkDuration = 500L
 
+    //Wificonnection related variables (Added by Magesh)
+    var mLocalBroadcastManager: LocalBroadcastManager? = null
+  /*  val MY_UUID = UUID.fromString("fa87c0d0-afac-11de-8a39-0800200c9a66")
+    val MY_UUID_REMOTE = UUID.fromString("8ce255c0-200a-11e0-ac64-0800200c9a66")
+    var bluetoothActivityResultLauncher: ActivityResultLauncher<Intent>? = null
+    val NAME = "BluetoothDemo"
+    val REMOTE_NAME = "RemoteBluetoothDemo"  */
+    private var REQUIRED_PERMISSIONS: Array<String>? = null
+ //   var rpl: ActivityResultLauncher<Array<String>>? = null
+    var mBluetoothAdapter: BluetoothAdapter? = null
+    var wifiConnectManager: WifiConnectManager? = null
+    var mBounded = false
+  //  var homekeypressed = false
+
     @RequiresApi(Build.VERSION_CODES.N)
     @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -91,12 +109,12 @@ class MainActivity : AppCompatActivity() {
         msgText = findViewById(R.id.messageText)
         offlineIcon = findViewById(R.id.offlineIcon)
         countDownLayout = findViewById(R.id.countDownLayout)
-        Thread.setDefaultUncaughtExceptionHandler(ExceptionHandler(this))
+  //      Thread.setDefaultUncaughtExceptionHandler(ExceptionHandler(this))
         storageDir = applicationContext.getExternalFilesDir("Contents")!!
   //      cancelRestartAlarm()
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+     /*   if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
             onPauseCalledOnce = true
-        }
+        }  */
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         getDeviceMemory()
         getMacAddressRooted()
@@ -213,7 +231,138 @@ class MainActivity : AppCompatActivity() {
             restartAppForEveryOneHour()
         }, 3600000)
 
+        //Wifi release permissions
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            REQUIRED_PERMISSIONS =
+                arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+            Log.d("BLESER", "Android 12+, we need scan and connect.")
+        } else {
+            REQUIRED_PERMISSIONS =
+                arrayOf(Manifest.permission.BLUETOOTH, Manifest.permission.BLUETOOTH_ADMIN)
+            Log.d("BLESER", "Android 11 or less, bluetooth permissions only ")
+        }
+
+        if (ContextCompat.checkSelfPermission(this@MainActivity,
+                Manifest.permission.ACCESS_FINE_LOCATION) !=
+            PackageManager.PERMISSION_GRANTED) {
+            requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        } else {
+            startwifiservice()
+        }
+        mLocalBroadcastManager = LocalBroadcastManager.getInstance(this)
+        val mIntentFilter = IntentFilter()
+        mIntentFilter.addAction(Constants.PLAYER_APP_CLOSE_BROADCAST)
+        mLocalBroadcastManager!!.registerReceiver(mBroadcastReceiver, mIntentFilter)
     }
+
+    // Codes by Magesh
+    var mBroadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent) {
+            if (intent.action == Constants.PLAYER_APP_CLOSE_BROADCAST) {
+                Log.d("Magesh", "Local boarccast Received sucess")
+                finish()
+            }
+        }
+    }
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()) { isGranted ->
+        if (isGranted) {
+            startwifiservice()
+        } else {
+            Log.d("MainActivity","PermissionRequest: Denied")
+        }
+    }
+
+    val mConnection: ServiceConnection = object : ServiceConnection {
+        override fun onServiceDisconnected(name: ComponentName) {
+            Toast.makeText(this@MainActivity, "Service is disconnected", Toast.LENGTH_SHORT).show()
+            mBounded = false
+            wifiConnectManager = null
+        }
+
+        override fun onServiceConnected(name: ComponentName, service: IBinder) {
+            Toast.makeText(this@MainActivity, "Service is connected", Toast.LENGTH_SHORT).show()
+            mBounded = true
+            val mLocalBinder: WifiConnectManager.LocalBinder = service as WifiConnectManager.LocalBinder
+            wifiConnectManager = mLocalBinder.getServerInstance()
+     //       val rd = Random()
+            Log.d("BLUENAME:" , "Constants.screenID: " + Constants.screenID)
+            wifiConnectManager!!.setbluetoothdevicename(Constants.screenID)
+        }
+    }
+
+    private fun startwifiservice() {
+        mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+
+        val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        bluetoothManager.getAdapter()
+
+        if (mBluetoothAdapter != null) {
+            val mIntent = Intent(this, WifiConnectManager::class.java)
+            bindService(mIntent, mConnection, BIND_AUTO_CREATE)
+        } else {
+            Toast.makeText(applicationContext, "Bluetooth device is not available . ", Toast.LENGTH_LONG).show()
+        }
+    }
+
+/*    private val permissionRequest = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+        val granted = permissions.entries.all {
+            it.value == true
+        }
+        permissions.entries.forEach {
+            Log.e("LOG_TAG", "${it.key} = ${it.value}")
+        }
+
+        if (granted) {
+            Toast.makeText(this, "Permission Granted started wifi service", Toast.LENGTH_SHORT).show()
+            startwifiservice()
+        } else {
+            Toast.makeText(this, "Permission Denied", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun allPermissionsGranted(): Boolean {
+        for (permission in REQUIRED_PERMISSIONS!!) {
+            if (ContextCompat.checkSelfPermission(
+                    this@MainActivity,
+                    permission
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                return false
+            }
+        }
+        return true
+    }  */
+
+    override fun onStop() {
+        super.onStop()
+        if (mBounded) {
+            unbindService(mConnection)
+            mBounded = false
+        }
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            val intent = Intent(Intent.ACTION_MAIN)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            intent.component = ComponentName("crazyboyfeng.justTvLauncher", "crazyboyfeng.justTvLauncher.LauncherActivity")
+            try
+            {
+                startActivity(intent)
+            }catch( e:ActivityNotFoundException){
+                Toast.makeText(this,"Activity Not Found",Toast.LENGTH_SHORT).show()
+                e.printStackTrace()
+            }
+            return true
+        }
+        return super.onKeyDown(keyCode, event)
+    }
+
+    // end of Magesh' codes
+
 
     @SuppressLint("UnspecifiedImmutableFlag")
     private fun restartAppForEveryOneHour () {

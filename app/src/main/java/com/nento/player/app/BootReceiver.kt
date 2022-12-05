@@ -14,7 +14,7 @@ class BootReceiver : BroadcastReceiver() {
 
     @SuppressLint("UnsafeProtectedBroadcastReceiver")
     override fun onReceive(p0: Context?, p1: Intent?) {
-        doRestart(p0)
+     //   doRestart(p0)
     }
 
     @SuppressLint("UnspecifiedImmutableFlag")
