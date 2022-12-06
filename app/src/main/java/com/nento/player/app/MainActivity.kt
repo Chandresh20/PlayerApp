@@ -2,6 +2,7 @@ package com.nento.player.app
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.ActivityManager
 import android.app.AlarmManager
 import android.app.PendingIntent
@@ -1305,17 +1306,28 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
                 FragmentMedia.PLAY_TYPE_LAYOUT -> {
-                    Log.d("ScreenPLay", "Layout")
-                    val bMap1 = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
-                    val canvas = Canvas(bMap1)
-                    view.draw(canvas)
-                    val bMap = view.drawToBitmap(Bitmap.Config.ARGB_8888)
-                    val aspectRation : Float = bMap.width.toFloat() / bMap.height
-                    val reqWidth = 400
-                    val scaledMap = Bitmap.createScaledBitmap(bMap, reqWidth, (reqWidth / aspectRation).toInt(), false)
-                    val saveOutputStream = saveFile.outputStream()
-                    scaledMap.compress(Bitmap.CompressFormat.JPEG, 100, saveOutputStream)
-                    saveOutputStream.close()
+                    if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        getScreenShotFromView(view, this@MainActivity) { bMap ->
+                            val aspectRation : Float = bMap.width.toFloat() / bMap.height
+                            val reqWidth = 400
+                            val scaledMap = Bitmap.createScaledBitmap(bMap, reqWidth, (reqWidth / aspectRation).toInt(), false)
+                            val saveOutputStream = saveFile.outputStream()
+                            scaledMap.compress(Bitmap.CompressFormat.JPEG, 100, saveOutputStream)
+                            saveOutputStream.close()
+                            Log.d("PixelCopyAPI", "screen shot uploaded")
+                        }
+                    } else {
+                        val bMap1 = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+                        val canvas = Canvas(bMap1)
+                        view.draw(canvas)
+                        val bMap = view.drawToBitmap(Bitmap.Config.ARGB_8888)
+                        val aspectRation : Float = bMap.width.toFloat() / bMap.height
+                        val reqWidth = 400
+                        val scaledMap = Bitmap.createScaledBitmap(bMap, reqWidth, (reqWidth / aspectRation).toInt(), false)
+                        val saveOutputStream = saveFile.outputStream()
+                        scaledMap.compress(Bitmap.CompressFormat.JPEG, 100, saveOutputStream)
+                        saveOutputStream.close()
+                    }
                 }
             }
             Log.d("ScreenShot", "Calling API")
@@ -1641,5 +1653,39 @@ class MainActivity : AppCompatActivity() {
                 Log.e("MacAddress", "${netface.name} skipping")
             }
         }
+    }
+
+
+    private fun getScreenShotFromView(view: View, activity: Activity, callback: (Bitmap) -> Unit) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            activity.window?.let { window ->
+                val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+                val locationOfViewInWindow = IntArray(2)
+                view.getLocationInWindow(locationOfViewInWindow)
+                try {
+                        PixelCopy.request(
+                            window,
+                            Rect(
+                                locationOfViewInWindow[0],
+                                locationOfViewInWindow[1],
+                                locationOfViewInWindow[0] + view.width,
+                                locationOfViewInWindow[1] + view.height
+                            ), bitmap, { copyResult ->
+                                Log.e("PixelCopy", "ress $copyResult")
+                                if (copyResult == PixelCopy.SUCCESS) {
+                                    callback(bitmap)
+                                } else {
+                                    Log.e("PixelCopy", "error $copyResult")
+                                }
+                                // possible to handle other result codes ...
+                            },
+                            Handler(mainLooper)
+                        )
+                    } catch (e: IllegalArgumentException) {
+                        // PixelCopy may throw IllegalArgumentException, make sure to handle it
+                        e.printStackTrace()
+                    }
+                }
+            }
     }
 }
