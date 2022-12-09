@@ -13,7 +13,9 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.*
+import android.webkit.WebResourceRequest
 import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.*
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.res.ResourcesCompat
@@ -56,9 +58,10 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
     private var imRunning = false
     private var currentMedia = -1
     private val itemArray = ArrayList<DisplayItems>()
-    private var customWebView : WebView? = null
-    private var youView : YouTubePlayerView? = null
+//    private var customWebView : WebView? = null
+//    private var youView : YouTubePlayerView? = null
     private val mediaPlayerList = ArrayList<MediaPlayer>()
+    private val youtubePlayerList = ArrayList<YouTubePlayerView>() // list of youtube player that needs to be release at end
     private lateinit var mediaPlayer : MediaPlayer
     private var totalCustomContent = 0
     private var customContentFinished = 0
@@ -166,6 +169,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             pVideo.visibility = View.GONE
             customLayout.visibility = View.GONE
             proBar.visibility = View.GONE
+            releaseYoutubePlayers()
             customLayout.removeAllViews()
             if ((Constants.rotationAngel == 0f
                         || Constants.rotationAngel == 180f)
@@ -269,6 +273,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 pVideo.visibility = View.VISIBLE
                 customLayout.visibility = View.GONE
                 proBar.visibility = View.GONE
+                releaseYoutubePlayers()
                 customLayout.removeAllViews()
             } ,2000)  // video play needs some time directly showing video/textureView
             // make the app frozen for few moment. that's why it delayed
@@ -283,6 +288,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             pImage2.visibility = View.GONE
             pVideo.visibility = View.GONE
             customLayout.visibility = View.VISIBLE
+            releaseYoutubePlayers()
             customLayout.removeAllViews()
             proBar.visibility = View.GONE
             if (mediaPlayer.isPlaying) {
@@ -302,6 +308,18 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 val jsonStr = customInfoFile.readText()
                 val dLayoutObject = gson.fromJson<CustomLayoutObject>(jsonStr, typeT.type)
                 Log.d("CustomLayouts", "${dLayoutObject.layout?.size}")
+
+                // get total numbers of youtube videos, if more than one video then youtube should be muted,
+                // to play multiple videos simultaneously
+                var youtubeVideoCount = 0
+                for(layout in dLayoutObject.layout ?: emptyList()) {
+                    for(mediaInfo in layout.media ?: emptyList()) {
+                        if(mediaInfo.type == Constants.MEDIA_YOUTUBE) {
+                            youtubeVideoCount++
+                        }
+                    }
+                }
+                Log.d("YoutubeVideos", "$youtubeVideoCount available")
 
                 imRunning = true
                 Log.d("CustomRunning", "started")
@@ -389,13 +407,17 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                         }
                     }
                     customLayout.addView(linearLayout)
-                    customWebView = null
-                    youView?.release()
-                    youView = null
+      //              customWebView = null
+      //              youView?.release()
+       //             youView = null
                     CoroutineScope(Dispatchers.Main).launch {
                         imRunning = true
                         // with new method assuming looping to be always true
-                        playCustomMedia2Async(linearLayout, layout.media ?: emptyList(), dLayoutObject.isVertical ?: false).await()
+                        playCustomMedia2Async(
+                            linearLayout,
+                            layout.media ?: emptyList(),
+                            dLayoutObject.isVertical ?: false,
+                            youtubeVideoCount).await()
                         Log.d("CustomRunning", "one finished")
                         customContentFinished += 1
                     }
@@ -648,7 +670,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
     @SuppressLint("CheckResult")
     private suspend fun playCustomMedia2Async(
         layout: LinearLayout,
-        mediaList: List<CustomLayoutObject.MediaInfo>, isVertical: Boolean) =
+        mediaList: List<CustomLayoutObject.MediaInfo>, isVertical: Boolean, youtubeCount: Int) =
         coroutineScope {
             async(Dispatchers.Main) {
                 if (mediaList.size == 1) {
@@ -756,9 +778,9 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                             }
                         }
                         Constants.MEDIA_YOUTUBE -> {
-                            if (youView == null) {
-                                youView = YouTubePlayerView(ctx)
-                                youView?.layoutParams = LinearLayout.LayoutParams(
+                    //        if (youView == null) {
+                                val youView = YouTubePlayerView(ctx)
+                                youView.layoutParams = LinearLayout.LayoutParams(
                                     layout.width,
                                     layout.height
                                 )
@@ -766,11 +788,13 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                 val keyStartIndex = videoURL?.indexOf("watch?v=") ?: 0
                                 val keyLength = 11
                                 val videoKey = videoURL?.substring(keyStartIndex+8, keyStartIndex +8 + keyLength)
-                                youView?.addYouTubePlayerListener(object :
+                                youView.addYouTubePlayerListener(object :
                                     AbstractYouTubePlayerListener() {
                                     override fun onReady(youTubePlayer: YouTubePlayer) {
+                                        youtubePlayerList.add(youView)
                                         Log.d("YOUTUBEPlayer", "Ready")
                                         youTubePlayer.loadVideo(videoKey ?: "null",0f)
+                                        if(youtubeCount > 1) youTubePlayer.mute()
                                         youTubePlayer.addListener(object : YouTubePlayerListener {
 
                                             var vidDuration = 0f
@@ -840,10 +864,10 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                     }
                                 })
                                 layout.addView(youView)
-                            } else {
+                      /*      } else {
                                 layout.addView(youView)
                             }
-                         /*   for (i in 0 until (mediaInfo.timeInSeconds ?: 5)) {
+                            for (i in 0 until (mediaInfo.timeInSeconds ?: 5)) {
                                 if (currentMedia != CURRENT_CUSTOM) {
                                     break
                                 }
@@ -851,8 +875,8 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                             }  */
                         }
                         Constants.MEDIA_WEB_PAGE -> {
-                            /*   if (customWebView == null) {
-                                   customWebView = WebView(ctx)
+                         //      if (customWebView == null) {
+                                   val customWebView = WebView(ctx)
                                    customWebView?.layoutParams = LinearLayout.LayoutParams(
                                        layout.width,
                                        layout.height
@@ -870,9 +894,10 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                    }
                                    customWebView?.settings?.allowContentAccess = true
                                    customWebView?.settings?.domStorageEnabled = true
-                                   customWebView?.loadUrl(media.fileName ?: "NA")
+                                   customWebView?.loadUrl(mediaInfo.fileName ?: "NA")
                                    layout.addView(customWebView)
-                               } else {
+
+                             /* }  else {
                                    layout.addView(customWebView)
                                }
                                for (i in 0 until (media.timeInSeconds ?: 10)) {
@@ -880,7 +905,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                        break
                                    }
                                    delay(1000)
-                               }  */
+                               }    */
                         }
                         else -> { Log.e("CustomLayout", "Unknown media type")}
                     }
@@ -1409,6 +1434,16 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             matrix.postRotate(rotationAngle)
             return Bitmap.createBitmap(toTransform, 0, 0, toTransform.width, toTransform.height, matrix, true)
         }
+    }
+
+    private fun releaseYoutubePlayers() {
+        var released = 0
+        for(player in youtubePlayerList) {
+            player.release()
+            released++
+        }
+        Log.d("YoutubeView", "Released: $released")
+        youtubePlayerList.clear()
     }
 
     class ClockObject(var time: Long, val textView: TextView, val is24Hours: Boolean, val bgColor: Int, val isTimeElseDate : Boolean)

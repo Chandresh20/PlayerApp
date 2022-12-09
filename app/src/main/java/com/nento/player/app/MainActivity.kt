@@ -228,9 +228,11 @@ class MainActivity : AppCompatActivity() {
 
         Handler(Looper.getMainLooper()).postDelayed({
             Log.d("App is going to restart", "App is going to restart")
-            Toast.makeText(applicationContext, "App is going to restart... ", Toast.LENGTH_LONG).show()
+            Toast.makeText(applicationContext, "App is going to restart... ", Toast.LENGTH_LONG)
+                .show()
             restartAppForEveryOneHour()
-        }, 3600000)
+                  }, 3600000)
+//        }, 120000)  // only for testing
 
         //Wifi release permissions
 
@@ -453,7 +455,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        val isDateTime = try {
+        val isDateTime = try {0
             jsonObject.get("isDateTime").toString()
         } catch (e: Exception) {
             ""
@@ -1477,8 +1479,10 @@ class MainActivity : AppCompatActivity() {
     //        mSocket?.disconnect()
    //         Log.d("onPause", "Socket Disconnected")
             val restartTime = if (pauseForWifi) 240000 else 30000
+//            val restartTime = if (pauseForWifi) 240000 else 10000  // only for testing
             pauseForWifi = false
-            val intent = Intent(this, TVActivity::class.java)
+//            val intent = Intent(this, TVActivity::class.java)
+            val intent = Intent(this, MainActivity::class.java)  // changed after splash screen flashing reported
             try {
                 intent.putExtra(Constants.INTENT_CRASH_RECOVERY, true)
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
