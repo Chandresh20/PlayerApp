@@ -26,6 +26,7 @@ class Constants {
         const val MEDIA_VIDEO = "VIDEO"
         const val MEDIA_WEB_PAGE = "WEBPAGE"
         const val MEDIA_YOUTUBE = "YOUTUBE"
+        const val MEDIA_RSS = "RSS"
         const val STOP_VIDEO = "stop"
 
         const val CONTENT_ASSIGNED_TEMPLATE = 1
@@ -97,7 +98,7 @@ class Constants {
         const val weatherIconScalingConstant4k = 66.6f
 
         const val APP_VERSION_CODE = 39
-        const val APP_VERSION_NAME = "Beta38.5"
+        const val APP_VERSION_NAME = "Beta38.8"
         const val APP_PLAYSTORE = ""
 
         fun getDayNameFromCal(num: Int) : String {

@@ -875,7 +875,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                 delay(1000)
                             }  */
                         }
-                        Constants.MEDIA_WEB_PAGE -> {
+                        Constants.MEDIA_WEB_PAGE, Constants.MEDIA_RSS-> {
                          //      if (customWebView == null) {
                            val customWebView = WebView(ctx)
                            customWebView.layoutParams = LinearLayout.LayoutParams(
@@ -1223,9 +1223,10 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 } else {
                     "${weatherArray[1]}°C"
                 }
+                val isNight : Boolean = weatherArray[2].toBoolean()
                 val iconDrawable : Int = when(weatherArray[0]) {
-                    "0" , "1" -> R.drawable.sunny
-                    "2" , "3" -> R.drawable.partly_sunny
+                    "0" , "1" -> if (isNight) R.drawable.moon_star else R.drawable.sunny
+                    "2" , "3" -> if (isNight) R.drawable.cloudy_moon_1 else R.drawable.partly_sunny
                     "45" , "48" -> R.drawable.haze
                     "51", "53", "55" -> R.drawable.haze
                     "61" -> R.drawable.light_rain
@@ -1357,19 +1358,47 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     if (latLongSplits.size < 2) return@async arrayOf("Error", "err")
                     val latitude = latLongSplits[0]
                     val longitude = latLongSplits[1]
-                    val apiURL = URL("https://api.open-meteo.com/v1/forecast?latitude=$latitude&longitude=$longitude&current_weather=true")
+                    val apiURL = URL("https://api.open-meteo.com/v1/forecast?latitude=$latitude&longitude=$longitude&current_weather=true&daily=sunrise,sunset&timezone=GMT")
                     val connection = apiURL.openConnection()
                     connection.connect()
                     val apiStream = connection.getInputStream()
                     val buff = ByteArray(4096)
                     val read = apiStream.read(buff)
                     val finalString = String(buff,0, read)
-                    val weatherJson = JSONObject(finalString)
-                    val currentWeatherJson = weatherJson.get("current_weather") as JSONObject
-                    val temperature = currentWeatherJson.get("temperature")
-                    val weatherCode = currentWeatherJson.get("weathercode")
-                    Log.d("WeatherApiRes", finalString)
-                    return@async arrayOf(weatherCode.toString() ,temperature.toString())
+                    try {
+                        val weatherJson = JSONObject(finalString)
+                        val currentWeatherJson = weatherJson.get("current_weather") as JSONObject
+                        val temperature = currentWeatherJson.get("temperature")
+                        val weatherCode = currentWeatherJson.get("weathercode")
+                        val dailyJson = weatherJson.get("daily") as JSONObject
+                        val sunriseSet = dailyJson.get("sunrise") as JSONArray
+                        val sunsetSet = dailyJson.get("sunset") as JSONArray
+                        val sunriseTimeUtc = sunriseSet[0].toString().split("T")[1]
+                        val sunsetTimeUtc = sunsetSet[0].toString().split("T")[1]
+                        val cal =  Calendar.getInstance()
+                        val currentUtcInMill = cal.timeInMillis - cal.timeZone.rawOffset
+                        cal.timeInMillis = currentUtcInMill
+                        val currentUtcHour = cal.get(Calendar.HOUR_OF_DAY)
+                        val currentUtcMin = cal.get(Calendar.MINUTE)
+                        val currentUTCHrStr = if(currentUtcHour < 10) {
+                            "0$currentUtcHour"
+                        } else { "$currentUtcHour" }
+                        val currentUtcMinStr = if (currentUtcMin < 10) {
+                            "0$currentUtcMin"
+                        } else { "$currentUtcMin" }
+                        val currentUtcTimeStr = "$currentUTCHrStr:$currentUtcMinStr"
+                        val night:Boolean = if (sunriseTimeUtc > sunsetTimeUtc) {
+                            sunriseTimeUtc < currentUtcTimeStr && currentUtcTimeStr < sunriseTimeUtc
+                        } else {
+                            !(sunriseTimeUtc < currentUtcTimeStr && currentUtcTimeStr < sunsetTimeUtc)
+                        }
+                        Log.d("NewSunriseSunSet", "$sunriseTimeUtc --- $currentUtcTimeStr---night:$night------ $sunsetTimeUtc")
+                        Log.d("WeatherApiRes", finalString)
+                        return@async arrayOf(weatherCode.toString() ,temperature.toString(), night.toString())
+                    } catch (e: Exception) {
+                        Log.e("WeatherError", "$e")
+                        return@async arrayOf("error", "error")
+                    }
                 } catch (e: Exception) {
                     Log.e("WeatherAPIError", "$e")
                     return@async arrayOf("Error", "$e")

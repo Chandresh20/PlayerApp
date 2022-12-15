@@ -455,7 +455,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        val isDateTime = try {0
+        val isDateTime = try {
             jsonObject.get("isDateTime").toString()
         } catch (e: Exception) {
             ""

@@ -103,7 +103,6 @@ class InitActivity : AppCompatActivity() {
                     } else {
                         Toast.makeText(this, "Location Permission Denied", Toast.LENGTH_SHORT).show()
                     }
-
                 }
                 return
             }
