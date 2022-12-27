@@ -36,5 +36,21 @@ class PlaylistObject : Serializable {
 
         @SerializedName("isIncluded")
         var sIncluded : Boolean? = null
+
+        // added for layout inside playlist
+        @SerializedName("shareData")
+        var shareData : String? = null
+
+        @SerializedName("imageUrl")
+        var imageUrl : List<ImageUrlObj>? = null
+    }
+
+    class ImageUrlObj : Serializable {
+
+        @SerializedName("name")
+        var name : String? = null
+
+        @SerializedName("url")
+        var url : String? = null
     }
 }

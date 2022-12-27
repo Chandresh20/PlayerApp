@@ -103,8 +103,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         window?.setFlags(WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
             WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED)
-        Constants.rotationAngel = sharedPreferences.getFloat(Constants.PREFS_ROTATION_ANGLE, 0f)
-        Log.d("OrientationAngle", "${Constants.rotationAngel}")
+        Constants.rotationAngle = sharedPreferences.getFloat(Constants.PREFS_ROTATION_ANGLE, 0f)
+        Log.d("OrientationAngle", "${Constants.rotationAngle}")
         mainViewModel = ViewModelProvider(this).get(MainViewModel::class.java)
         mainViewModel.isIdHidden.value = sharedPreferences.getBoolean(Constants.PREFS_IS_ID_HIDDEN, false)
         msgText = findViewById(R.id.messageText)
@@ -416,6 +416,9 @@ class MainActivity : AppCompatActivity() {
         detailObject.put("Android API", "${Build.VERSION.SDK_INT}")
         Log.d("SendingScreenInfo", "$detailObject")
         mSocket?.emit(Constants.SOCKET_SCREEN_DATA, detailObject)
+        Handler(mainLooper).postDelayed({
+            checkForUpdate2()
+        }, 20000)
     }
 
     private val templateListener = Emitter.Listener { args ->
@@ -576,6 +579,11 @@ class MainActivity : AppCompatActivity() {
         keepDownloading = false
         messageHandler.obtainMessage(0, "New Content Available").sendToTarget()
         val jsonObject = args[0] as JSONObject
+
+        //save json for investigation
+        val tempFile = File(getExternalFilesDir("rw"), "playlistJson.txt")
+        tempFile.writeText(jsonObject.toString())
+
         val gson = Gson()
         val typeT = object : TypeToken<PlaylistObject>() {}
         val playlistObject = gson.fromJson<PlaylistObject>(jsonObject.toString(), typeT.type)
@@ -622,14 +630,26 @@ class MainActivity : AppCompatActivity() {
                         downloadDir.mkdirs()
                     }
                     if (!playlistObject.playlist.isNullOrEmpty()) {
-                        imDownloading = true
                         val totalCount = (playlistObject.playlist ?: emptyList()).size
                         var itemCount = 0
                         for (item in playlistObject.playlist!!) {
+                            if ((item.shareData?.length ?: 0) > 10) {
+                                // this is a layout item and needs to handle differently
+                                Log.d("PlaylistLayoutDownload", "${JSONArray(item.shareData.toString())}")
+                                val gson = Gson()
+                                val typeT = object: TypeToken<List<CustomLayoutObject.LayoutInfo>>() {}.type
+                                val layoutList = gson.fromJson<List<CustomLayoutObject.LayoutInfo>>(JSONArray(item.shareData).toString(), typeT)
+                       //         val layoutList = Constants.getObjectFromJson<List<CustomLayoutObject.LayoutInfo>>(JSONArray(item.shareData.toString()).toString())
+                                Log.d("PlaylistLayoutSize", layoutList.size.toString())
+                             //   val itemUrls = Constants.getObjectFromJson<List<PlaylistObject.ImageUrlObj>>(JSONArray(item.imageUrl.toString()).toString())
+                                Log.d("PlaylistUrls", item.imageUrl?.size.toString())
+                                downloadLayoutForPlaylistAsync(item.imageUrl ?: emptyList()).await()
+                                continue
+                            }
                             Log.d("Starting", item.mediaId ?: "NA")
                             // check if media is already available
 
-                            var existedFileLength = 0L
+                       /*     var existedFileLength = 0L
                             if((item.mediaName ?: "null").contains(".mp4") || (item.mediaName ?: "null").contains(".mkv")
                                 || (item.mediaName ?: "null").contains(".mov") || (item.mediaName ?: "null").contains(".webm")
                                 || (item.mediaName ?: "null").contains(".flv")) {
@@ -640,7 +660,8 @@ class MainActivity : AppCompatActivity() {
                                         existedFileLength = File(playlistDir, item.mediaName!!).length()
                                     }
                                 }
-                            }
+                            }  */
+                            val existedFileLength = checkIfVideoAlreadyExists(item.mediaName ?: "null", playlistDir)
 
                             if (item.sIncluded == false) {
                                 Log.d("Skipping", "${item.mediaName}")
@@ -670,6 +691,7 @@ class MainActivity : AppCompatActivity() {
                             var loopCount = 0
                             var noReceive = 0
                             var buff : ByteArray?
+                            imDownloading = true
                             keepDownloading = true
                             while (keepDownloading) {
                                 loopCount += 1
@@ -820,6 +842,7 @@ class MainActivity : AppCompatActivity() {
                 try {
                     while (imDownloading) {
                         delay(100)
+                        Log.d("imDownloading", "true")
                     }
                     imDownloading = true
                     val downloadDir = File(storageDir, Constants.DOWNLOAD_CONTENT_DIR)
@@ -905,6 +928,98 @@ class MainActivity : AppCompatActivity() {
                     messageHandler.postDelayed( {
                         messageHandler.obtainMessage(0, "").sendToTarget()
                     }, 5000)
+                }
+            }
+        }
+
+    private suspend fun downloadLayoutForPlaylistAsync(imageUrls : List<PlaylistObject.ImageUrlObj>) =
+        coroutineScope {
+            async(Dispatchers.IO) {
+                try {
+                    imDownloading = true
+                    val downloadDir = File(storageDir, Constants.DOWNLOAD_CONTENT_DIR)
+                    val playlistDir = File(storageDir, Constants.PLAYLIST_DIR_NAME)
+                    if (!downloadDir.exists()) {
+                        downloadDir.mkdirs()
+                    }
+                    val totalCount = imageUrls.size
+                    var itemCount = 0
+                    for(imageUrl in imageUrls) {
+                        itemCount++
+                        val url = URL(imageUrl.url)
+                        val connection = url.openConnection()
+                        val contentLength = connection.contentLength
+                        Log.d("CheckLayoutPlay", "content-length for $url -> $contentLength")
+
+                        // check if video already exists
+                        val availableLength = checkIfVideoAlreadyExists(imageUrl.name ?: "null", playlistDir)
+
+                        if ((contentLength - availableLength) < 100) {
+                            Log.d("CheckLayoutPLaylisrt", "${imageUrl.name} Okay, not downloading again")
+                            continue
+                        } else {
+                            Log.d("CheckLayoutPLaylist", "${imageUrl.name} Downloading")
+                        }
+
+                        val inStream = connection.getInputStream()
+                        val outFile = File(downloadDir, imageUrl.name ?: "null")
+                        if(outFile.exists()) outFile.delete()
+                        outFile.createNewFile()
+                        val outStream = outFile.outputStream()
+                        var buff : ByteArray
+                        var loopCount = 0
+                        var totalWrite = 0f
+                        keepDownloading = true
+                        var noReceive = 0
+                        Log.d("Starting LayoutPlaylist" , "${imageUrl.url}")
+                        updateHandler2.obtainMessage(0, "0% ($itemCount/$totalCount)").sendToTarget()
+
+
+                        while (keepDownloading) {
+                            loopCount += 1
+                            buff = ByteArray(1024)
+                            val read = inStream.read(buff)
+                            if (totalWrite >= contentLength) break
+                            if (read > 0) {
+                                outStream.write(buff, 0, read)
+                                noReceive = 0
+                            } else {
+                                noReceive += 1
+                                if (noReceive > 50)
+                                    keepDownloading = false
+                            }
+                            totalWrite += read
+                            if (loopCount > 400) {
+                                loopCount = 0
+                                val update = (totalWrite/contentLength * 100).toInt()
+                                updateHandler2.obtainMessage(0, "$update% ($itemCount/$totalCount)").sendToTarget()
+                                Log.d("Writing File", "${imageUrl.name} : $totalWrite")
+                            }
+                        }
+                        if(!keepDownloading) {
+                            if ((contentLength - totalWrite) > 100) {
+                                inStream.close()
+                                outStream.close()
+                                Log.d("Interrupt after", "$totalWrite")
+                                throw IOException("Interrupt")
+                            }
+                        }
+                        inStream.close()
+                        outStream.close()
+                        val update = (totalWrite/contentLength * 100).toInt()
+                        updateHandler2.obtainMessage(0, "$update% ($itemCount/$totalCount)").sendToTarget()
+                        Log.d("Finished File", "${imageUrl.name} : $totalWrite")
+                    }
+                    messageHandler.obtainMessage(0, "Copying data").sendToTarget()
+                    for (downFile in (downloadDir.listFiles() ?: emptyArray())) {
+                        val newPlaylistFile = File(playlistDir, downFile.name)
+                        downFile.copyRecursively(newPlaylistFile, true)
+                    }
+                    imDownloading = false
+                } catch (e: Exception) {
+                    Log.e("Playlist download", "$e")
+                    imDownloading = false
+                    messageHandler.obtainMessage(0, "Error").sendToTarget()
                 }
             }
         }
@@ -1076,14 +1191,14 @@ class MainActivity : AppCompatActivity() {
         }  */
         val msg = args[0]
         Log.d("RotationUpdate", "$msg")
-        Constants.rotationAngel += 90f
-        if (Constants.rotationAngel >= 360f) {
-            Constants.rotationAngel = 0f
+        Constants.rotationAngle += 90f
+        if (Constants.rotationAngle >= 360f) {
+            Constants.rotationAngle = 0f
         }
         sharedPreferences.edit().apply {
-            putFloat(Constants.PREFS_ROTATION_ANGLE, Constants.rotationAngel)
+            putFloat(Constants.PREFS_ROTATION_ANGLE, Constants.rotationAngle)
         }.apply()
-        Log.d("NewRotationValue", "${Constants.rotationAngel}")
+        Log.d("NewRotationValue", "${Constants.rotationAngle}")
         if (!onSplashScreen) {
             broadcastContent(assignedContent)
             Log.d("RotationUpdate", "Content Broadcast")
@@ -1103,57 +1218,68 @@ class MainActivity : AppCompatActivity() {
             messageHandler.obtainMessage(0, "Checking for update").sendToTarget()
             Log.d("Checking Update", "now")
             //      messageHandler.obtainMessage(0, "Checking Update").sendToTarget()
-            val jsonObject = JSONObject()
-            jsonObject.put("appVersion", Constants.APP_VERSION_CODE)
-            jsonObject.put("appVersionName", Constants.APP_PLAYSTORE)
-            Log.d("UpdateRequest", "$jsonObject")
-            ApiService.apiService.checkForUpdate(jsonObject.toString(), "application/json")
-                .enqueue(object : Callback<UpdateResponse> {
-                    override fun onResponse(
-                        call: Call<UpdateResponse>,
-                        response: Response<UpdateResponse>
-                    ) {
-                        Log.d("UpdateResponse", "${response.body()?.data?.isUpdateAvailable}")
-                        if (response.isSuccessful) {
-                            if (response.body()?.data?.isUpdateAvailable == true) {
-                                /*     startActivity(Intent(Intent.ACTION_VIEW,
-                                         Uri.parse(response.body()?.data?.updateUrl)))  */
-                                Log.d("updateUrl", "${response.body()?.data?.updateUrl}")
-                                val updateURL = response.body()?.data?.updateUrl
-                                CoroutineScope(Dispatchers.Main).launch {
-                                    if (updateURL != null && updateURL.contains(".apk")) {
-                                        //     messageHandler.obtainMessage(0, "Downloading Update").sendToTarget()
-                                        downloadAPKAndInstall2Async(updateURL).await()
-                                        //    (response.body()?.data?.newVersion) ?: 0).await()
-                                    } else {
-                                        //        messageHandler.obtainMessage(0, "Redirecting").sendToTarget()
-                                        startActivity(Intent(Intent.ACTION_VIEW,
-                                            Uri.parse(response.body()?.data?.updateUrl)))
+            CoroutineScope(Dispatchers.Main).launch {
+                val jsonObject = JSONObject()
+                jsonObject.put("appVersion", Constants.APP_VERSION_CODE)
+                jsonObject.put("appVersionName", Constants.APP_PLAYSTORE)
+                // new parameters for app version in dashboard
+                jsonObject.put("appCurrentVersionName", Constants.APP_VERSION_NAME)
+                jsonObject.put("screenNo", Constants.screenID)
+                jsonObject.put("MAC", "-")
+                jsonObject.put("RAM", Constants.deviceMemory)
+                val myPublicIp = getMyPublicIpAsync().await()
+                jsonObject.put("ipAddress", myPublicIp)
+                jsonObject.put("orientation", Constants.rotationAngle)
+                jsonObject.put("AndroidVersion", Build.VERSION.SDK_INT)
+                Log.d("UpdateRequest", "$jsonObject")
+                ApiService.apiService.checkForUpdate(jsonObject.toString(), "application/json")
+                    .enqueue(object : Callback<UpdateResponse> {
+                        override fun onResponse(
+                            call: Call<UpdateResponse>,
+                            response: Response<UpdateResponse>
+                        ) {
+                            Log.d("UpdateResponse", "${response.body()?.data?.isUpdateAvailable}")
+                            if (response.isSuccessful) {
+                                if (response.body()?.data?.isUpdateAvailable == true) {
+                                    /*     startActivity(Intent(Intent.ACTION_VIEW,
+                                             Uri.parse(response.body()?.data?.updateUrl)))  */
+                                    Log.d("updateUrl", "${response.body()?.data?.updateUrl}")
+                                    val updateURL = response.body()?.data?.updateUrl
+                                    CoroutineScope(Dispatchers.Main).launch {
+                                        if (updateURL != null && updateURL.contains(".apk")) {
+                                            //     messageHandler.obtainMessage(0, "Downloading Update").sendToTarget()
+                                            downloadAPKAndInstall2Async(updateURL).await()
+                                            //    (response.body()?.data?.newVersion) ?: 0).await()
+                                        } else {
+                                            //        messageHandler.obtainMessage(0, "Redirecting").sendToTarget()
+                                            startActivity(Intent(Intent.ACTION_VIEW,
+                                                Uri.parse(response.body()?.data?.updateUrl)))
+                                        }
                                     }
+                                } else {
+                                    messageHandler.obtainMessage(0, "Latest Version already downloaded").sendToTarget()
+                                    updateHandler2.postDelayed( {
+                                        messageHandler.obtainMessage(0, "").sendToTarget()
+                                    }, 3000)
                                 }
                             } else {
-                                messageHandler.obtainMessage(0, "Latest Version already downloaded").sendToTarget()
+                                messageHandler.obtainMessage(0, "No Update response").sendToTarget()
                                 updateHandler2.postDelayed( {
                                     messageHandler.obtainMessage(0, "").sendToTarget()
                                 }, 3000)
                             }
-                        } else {
-                            messageHandler.obtainMessage(0, "No Update response").sendToTarget()
-                            updateHandler2.postDelayed( {
-                                messageHandler.obtainMessage(0, "").sendToTarget()
-                            }, 3000)
                         }
-                    }
 
-                    override fun onFailure(call: Call<UpdateResponse>, t: Throwable) {
-                        //            messageHandler.obtainMessage(0, "Failed to update").sendToTarget()
-                        Log.e("UpdateError", "${t.message}")
-                        messageHandler.obtainMessage(0, "Failed to get update").sendToTarget()
-                        autoRestartHandler.postDelayed( {
-                            messageHandler.obtainMessage(0, "").sendToTarget()
-                        }, 5000)
-                    }
-                })
+                        override fun onFailure(call: Call<UpdateResponse>, t: Throwable) {
+                            //            messageHandler.obtainMessage(0, "Failed to update").sendToTarget()
+                            Log.e("UpdateError", "${t.message}")
+                            messageHandler.obtainMessage(0, "Failed to get update").sendToTarget()
+                            autoRestartHandler.postDelayed( {
+                                messageHandler.obtainMessage(0, "").sendToTarget()
+                            }, 5000)
+                        }
+                    })
+            }
         } else {
             messageHandler.obtainMessage(0, "No Network").sendToTarget()
             updateHandler2.postDelayed( {
@@ -1278,54 +1404,79 @@ class MainActivity : AppCompatActivity() {
         val view: View = window.decorView
         val saveFile = File(storageDir, "${Constants.playerId}.jpg")
         try {
-            when(FragmentMedia.playType) {
-                FragmentMedia.PLAY_TYPE_IMAGE -> {
-                    Log.d("ScreenPLay", "Image")
-                    val bMap1 = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
-                    val canvas = Canvas(bMap1)
-                    view.draw(canvas)
-                    val bMap = view.drawToBitmap(Bitmap.Config.ARGB_8888)
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                getScreenShotFromView(view, this@MainActivity) { bMap ->
                     val aspectRation : Float = bMap.width.toFloat() / bMap.height
                     val reqWidth = 400
                     val scaledMap = Bitmap.createScaledBitmap(bMap, reqWidth, (reqWidth / aspectRation).toInt(), false)
                     val saveOutputStream = saveFile.outputStream()
                     scaledMap.compress(Bitmap.CompressFormat.JPEG, 100, saveOutputStream)
                     saveOutputStream.close()
+                    Log.d("PixelCopyAPI", "screen shot uploaded")
                 }
-                FragmentMedia.PLAY_TYPE_VIDEO -> {
-                    Log.d("ScreenPLay", "Video")
-                    val bMap = FragmentMedia.playlistTextureView?.bitmap
-                    if (bMap != null) {
-                        val matrix = Matrix()
-                        matrix.postRotate(Constants.rotationAngel)
-                        val aspectRation : Float = bMap.width.toFloat() / bMap.height
-                        val reqWidth = 400
-                        val scaledMap = Bitmap.createScaledBitmap(bMap, reqWidth, (reqWidth / aspectRation).toInt(), false)
-                        val rotatedMap = Bitmap.createBitmap(scaledMap, 0 ,0, reqWidth, (reqWidth / aspectRation).toInt(), matrix, true)
-                        val saveOutputStream = saveFile.outputStream()
-                        rotatedMap.compress(Bitmap.CompressFormat.JPEG, 100, saveOutputStream)
-                        saveOutputStream.close()
-                    }
-                }
-                FragmentMedia.PLAY_TYPE_LAYOUT -> {
-                    if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        getScreenShotFromView(view, this@MainActivity) { bMap ->
-                            val aspectRation : Float = bMap.width.toFloat() / bMap.height
-                            val reqWidth = 400
-                            val scaledMap = Bitmap.createScaledBitmap(bMap, reqWidth, (reqWidth / aspectRation).toInt(), false)
-                            val saveOutputStream = saveFile.outputStream()
-                            scaledMap.compress(Bitmap.CompressFormat.JPEG, 100, saveOutputStream)
-                            saveOutputStream.close()
-                            Log.d("PixelCopyAPI", "screen shot uploaded")
-                        }
-                    } else {
-                        val bMap1 = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+            } else {
+                when (FragmentMedia.playType) {
+                    FragmentMedia.PLAY_TYPE_IMAGE -> {
+                        Log.d("ScreenPLay", "Image")
+                        val bMap1 =
+                            Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
                         val canvas = Canvas(bMap1)
                         view.draw(canvas)
                         val bMap = view.drawToBitmap(Bitmap.Config.ARGB_8888)
-                        val aspectRation : Float = bMap.width.toFloat() / bMap.height
+                        val aspectRation: Float = bMap.width.toFloat() / bMap.height
                         val reqWidth = 400
-                        val scaledMap = Bitmap.createScaledBitmap(bMap, reqWidth, (reqWidth / aspectRation).toInt(), false)
+                        val scaledMap = Bitmap.createScaledBitmap(
+                            bMap,
+                            reqWidth,
+                            (reqWidth / aspectRation).toInt(),
+                            false
+                        )
+                        val saveOutputStream = saveFile.outputStream()
+                        scaledMap.compress(Bitmap.CompressFormat.JPEG, 100, saveOutputStream)
+                        saveOutputStream.close()
+                    }
+                    FragmentMedia.PLAY_TYPE_VIDEO -> {
+                        Log.d("ScreenPLay", "Video")
+                        val bMap = FragmentMedia.playlistTextureView?.bitmap
+                        if (bMap != null) {
+                            val matrix = Matrix()
+                            matrix.postRotate(Constants.rotationAngle)
+                            val aspectRation: Float = bMap.width.toFloat() / bMap.height
+                            val reqWidth = 400
+                            val scaledMap = Bitmap.createScaledBitmap(
+                                bMap,
+                                reqWidth,
+                                (reqWidth / aspectRation).toInt(),
+                                false
+                            )
+                            val rotatedMap = Bitmap.createBitmap(
+                                scaledMap,
+                                0,
+                                0,
+                                reqWidth,
+                                (reqWidth / aspectRation).toInt(),
+                                matrix,
+                                true
+                            )
+                            val saveOutputStream = saveFile.outputStream()
+                            rotatedMap.compress(Bitmap.CompressFormat.JPEG, 100, saveOutputStream)
+                            saveOutputStream.close()
+                        }
+                    }
+                    FragmentMedia.PLAY_TYPE_LAYOUT -> {
+                        val bMap1 =
+                            Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+                        val canvas = Canvas(bMap1)
+                        view.draw(canvas)
+                        val bMap = view.drawToBitmap(Bitmap.Config.ARGB_8888)
+                        val aspectRation: Float = bMap.width.toFloat() / bMap.height
+                        val reqWidth = 400
+                        val scaledMap = Bitmap.createScaledBitmap(
+                            bMap,
+                            reqWidth,
+                            (reqWidth / aspectRation).toInt(),
+                            false
+                        )
                         val saveOutputStream = saveFile.outputStream()
                         scaledMap.compress(Bitmap.CompressFormat.JPEG, 100, saveOutputStream)
                         saveOutputStream.close()
@@ -1692,4 +1843,38 @@ class MainActivity : AppCompatActivity() {
                 }
             }
     }
+
+    // this function checks if the file is available or not and returns its size, return 0 if not exists
+    private fun checkIfVideoAlreadyExists(name: String, inDir: File) : Long {
+        if(name.contains(".mp4") || name.contains(".mkv")
+            || name.contains(".mov") || name.contains(".webm")
+            || name.contains(".flv")) {
+            if (inDir.exists()) {
+                val allFilesNames = inDir.list()
+                if (allFilesNames != null && allFilesNames.contains(name)) {
+                    Log.d("VideoAvailableCheck", "$name already available")
+                    return File(inDir, name).length()
+                }
+            }
+        }
+        return 0
+    }
+
+    private suspend fun getMyPublicIpAsync() : Deferred<String> =
+        coroutineScope {
+            async(Dispatchers.IO) {
+                var result = ""
+                result = try {
+                    val url = URL("https://api.ipify.org")
+                    val httpsURLConnection = url.openConnection()
+                    val iStream = httpsURLConnection.getInputStream()
+                    val buff = ByteArray(1024)
+                    val read = iStream.read(buff)
+                    String(buff,0, read)
+                } catch (e: Exception) {
+                    "error : $e"
+                }
+                return@async result
+            }
+        }
 }

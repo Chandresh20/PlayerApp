@@ -18,7 +18,7 @@ import com.google.android.play.core.install.model.UpdateAvailability
 
 class InitActivity : AppCompatActivity() {
 
-    // Codes by Magesh
+    // Codes by Magesh removed for testing. also service in manifest is removed
     var mBluetoothAdapter: BluetoothAdapter? = null
     private var REQUIRED_PERMISSIONS: Array<String>? = null
     var rpl: ActivityResultLauncher<Array<String>>? = null

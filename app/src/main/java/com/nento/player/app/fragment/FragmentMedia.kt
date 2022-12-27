@@ -58,8 +58,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
     private var imRunning = false
     private var currentMedia = -1
     private val itemArray = ArrayList<DisplayItems>()
-//    private var customWebView : WebView? = null
-//    private var youView : YouTubePlayerView? = null
     private val mediaPlayerList = ArrayList<MediaPlayer>()
     private val youtubePlayerList = ArrayList<YouTubePlayerView>() // list of youtube player that needs to be release at end
     private lateinit var mediaPlayer : MediaPlayer
@@ -74,6 +72,14 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
     private val wMulti: Float = (MainActivity.displayWidth.toFloat() / Constants.CUSTOM_WIDTH_THEIR)
     private val hMulti: Float = (MainActivity.displayHeight.toFloat() / Constants.CUSTOM_HEIGHT_THEIR)
 
+    private var fontSizeMultiplier : Float = 1f
+
+    private lateinit var pImage : ImageView
+    private lateinit var pImage2 : ImageView
+    private lateinit var pVideo : TextureView
+    private lateinit var customLayout : ConstraintLayout
+    private lateinit var proBar : ProgressBar
+
     @SuppressLint("SetJavaScriptEnabled", "CheckResult")
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -82,19 +88,19 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
     ): View? {
         ctx = findNavController().context
         Constants.onSplashScreen = false
+        fontSizeMultiplier = (MainActivity.displayHeight.toFloat() / resources.displayMetrics.densityDpi) / 3.375f
         val rootView = inflater.inflate(R.layout.fragment_media, container, false)
-        val pImage = rootView.findViewById<ImageView>(R.id.previewImage)
-        val pImage2 = rootView.findViewById<ImageView>(R.id.previewImage2)
-        val pVideo = rootView.findViewById<TextureView>(R.id.textureVideo)
+        pImage = rootView.findViewById(R.id.previewImage)
+        pImage2 = rootView.findViewById(R.id.previewImage2)
+        pVideo = rootView.findViewById(R.id.textureVideo)
         val weatherAndTimeLayout = rootView.findViewById<ConstraintLayout>(R.id.weatherAndTimeLayout)
-     //   val weatherText = rootView.findViewById<TextView>(R.id.weatherText)
         mediaPlayer = MediaPlayer()
         var isEvenImage = false
-        val customLayout = rootView.findViewById<ConstraintLayout>(R.id.customLayout)
+        customLayout = rootView.findViewById(R.id.customLayout)
         playlistTextureView = pVideo
         playlistTextureView?.surfaceTextureListener = this
         val screenId = rootView.findViewById<TextView>(R.id.screenIdText)
-        val proBar = rootView.findViewById<ProgressBar>(R.id.mediaProgressBar)
+        proBar = rootView.findViewById<ProgressBar>(R.id.mediaProgressBar)
         screenId.text = Constants.screenID
 
         timeRunnable = object : Runnable {
@@ -116,18 +122,26 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                         min = "0$min"
                     }
 
-                    Log.d("TimeRunnable", "updated")
+                    Log.d("TimeRunnable", "updated $hour24 and $hour12 $amPm")
 
                     val clockText : String  = if(clock.isTimeElseDate) {
                         var amPmS: String
                         if(!clock.is24Hours) {
+                            var hrStr = hour12.toString()
+                            if(hrStr.length == 1) {
+                                hrStr = "0$hrStr"
+                            }
                             amPmS = "AM"
                             if(amPm == 1) {
                                 amPmS = "PM"
                             }
-                            "$hour12:$min $amPmS"
+                            "$hrStr:$min $amPmS"
                          } else {
-                            "$hour24:$min"
+                             var hrStr = hour24.toString()
+                            if(hrStr.length == 1) {
+                                hrStr = "0$hrStr"
+                            }
+                            "$hrStr:$min"
                         }
                     } else {
                         val dayName = cal.get(Calendar.DAY_OF_WEEK)
@@ -136,16 +150,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                         val year = cal.get(Calendar.YEAR)
                         "${Constants.getDayNameFromCal(dayName)}, ${Constants.getMonthNameFromCal(month)} $date, $year"
                     }
-
-                 /*   val clockText : String = if (!clock.is24Hours) {
-                        var amPMS = "AM"
-                        if (amPm == 1) {
-                            amPMS = "PM"
-                        }
-                        "$hour12:$min $amPMS, ${Constants.getDayNameFromCal(dayName)}, ${Constants.getMonthNameFromCal(month)} $date, $year"
-                    } else {
-                        "$hour24:$min, ${Constants.getDayNameFromCal(dayName)}, ${Constants.getMonthNameFromCal(month)} $date, $year"
-                    }  */
                     clock.textView.text = clockText
                     clock.textView.setBackgroundColor(clock.bgColor)
                     clock.time += 30000
@@ -171,8 +175,8 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             proBar.visibility = View.GONE
             releaseYoutubePlayers()
             customLayout.removeAllViews()
-            if ((Constants.rotationAngel == 0f
-                        || Constants.rotationAngel == 180f)
+            if ((Constants.rotationAngle == 0f
+                        || Constants.rotationAngle == 180f)
                 && !isVertical) {
                 Log.d("FitXY horizontal", "------------------------")
                 if (isEvenImage) {
@@ -181,8 +185,8 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     pImage.scaleType = ImageView.ScaleType.FIT_XY
                 }
             }
-            if ((Constants.rotationAngel == 0f
-                        || Constants.rotationAngel == 180f)
+            if ((Constants.rotationAngle == 0f
+                        || Constants.rotationAngle == 180f)
                 && isVertical) {
                 Log.d("FitCenter Vertical", "--------------------------")
                 if (isEvenImage) {
@@ -191,8 +195,8 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     pImage.scaleType = ImageView.ScaleType.FIT_CENTER
                 }
             }
-            if ((Constants.rotationAngel == 90f
-                        || Constants.rotationAngel == 270f)
+            if ((Constants.rotationAngle == 90f
+                        || Constants.rotationAngle == 270f)
                 && isVertical) {
                 Log.d("FitXY vertical", "-----------------------------")
                 if (isEvenImage) {
@@ -202,8 +206,8 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 }
             }
 
-            if ((Constants.rotationAngel == 90f
-                        || Constants.rotationAngel == 270f)
+            if ((Constants.rotationAngle == 90f
+                        || Constants.rotationAngle == 270f)
                 && !isVertical) {
                 Log.d("FitCenter Horizontal", "----------------------------")
                 if (isEvenImage) {
@@ -216,9 +220,9 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 .load(file)
                 .diskCacheStrategy(DiskCacheStrategy.NONE)
                 .skipMemoryCache(true)
-            if (Constants.rotationAngel > 0f) {
+            if (Constants.rotationAngle > 0f) {
                 glide.override(MainActivity.displayHeight, MainActivity.displayWidth)
-                glide.transform(RotateTransformation(Constants.rotationAngel))
+                glide.transform(RotateTransformation(Constants.rotationAngle))
             } else {
                 glide.override(MainActivity.displayWidth, MainActivity.displayHeight)
             }
@@ -327,21 +331,31 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 totalCustomContent = dLayoutObject.layout?.size ?: 0
                 customContentFinished = 0
                 if (dLayoutObject.isVertical == true) {
-                    if (Constants.rotationAngel == 0f) {
-                        Constants.rotationAngel = 90f
-                    } else if (Constants.rotationAngel == 180f) {
-                        Constants.rotationAngel = 270f
+                    if (Constants.rotationAngle == 0f) {
+                        Constants.rotationAngle = 90f
+                    } else if (Constants.rotationAngle == 180f) {
+                        Constants.rotationAngle = 270f
                     }
+                    Constants.lastLayoutVertical = true
                 } else {
-                    if (Constants.rotationAngel == 90f) {
-                        Constants.rotationAngel = 180f
-                    } else if (Constants.rotationAngel == 270f) {
-                        Constants.rotationAngel = 0f
+                    if (Constants.rotationAngle == 90f) {
+                        if(Constants.lastLayoutVertical) {
+                            Constants.rotationAngle = 0f
+                        } else {
+                            Constants.rotationAngle = 180f
+                        }
+                    } else if (Constants.rotationAngle == 270f) {
+                        if(Constants.lastLayoutVertical) {
+                            Constants.rotationAngle = 180f
+                        } else {
+                            Constants.rotationAngle = 0f
+                        }
                     }
+                    Constants.lastLayoutVertical = false
                 }
                 MainActivity.sharedPreferences.edit().putFloat(
-                    Constants.PREFS_ROTATION_ANGLE, Constants.rotationAngel).apply()
-                Log.d("CustomRotationSet", "${Constants.rotationAngel}")
+                    Constants.PREFS_ROTATION_ANGLE, Constants.rotationAngle).apply()
+                Log.d("CustomRotationSet", "${Constants.rotationAngle}")
                 for (layout in (dLayoutObject.layout ?: emptyList())) {
                     var layoutWidth : Int = (layout.width ?: 0).toInt()
                     var layoutHeight : Int = (layout.height ?: 0).toInt()
@@ -361,7 +375,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     }
                     linearLayout.layoutParams = ConstraintLayout.LayoutParams(
                         (layoutWidth * wMulti).toInt(), (layoutHeight * hMulti).toInt()).apply {
-                        when(Constants.rotationAngel) {
+                        when(Constants.rotationAngle) {
                             0f -> {
                                 if (isVertical) {
                                     // not available
@@ -435,7 +449,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 currentMedia = -1
                 areClocksRunning = false
                 CoroutineScope(Dispatchers.Main).launch {
-                    proBar.visibility = View.VISIBLE
+                     proBar.visibility = View.VISIBLE
                     while (imRunning) {
                         Log.d("ImRunning", "Waiting for current media to stop")
                         Log.d("ImRunning", "customContentFinished : $customContentFinished / $totalCustomContent")
@@ -516,7 +530,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 it.start()
             }
             mediaPlayer.setOnVideoSizeChangedListener { _, width, height ->
-                if (Constants.rotationAngel == 90f || Constants.rotationAngel == 270f) {
+                if (Constants.rotationAngle == 90f || Constants.rotationAngle == 270f) {
                     playVideoVertically(width, height, playlistTextureView)
                 } else {
                     playVideoNormally(width, height, playlistTextureView)
@@ -562,7 +576,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             }
         }
         textureView?.layoutParams = vidParams
-        textureView?.rotation = Constants.rotationAngel
+        textureView?.rotation = Constants.rotationAngle
     }
 
     private fun playVideoVertically(videoWidth: Int, videoHeight: Int, textureView: TextureView?) {
@@ -587,7 +601,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             }
         }
         textureView?.layoutParams = vidParams
-        textureView?.rotation = Constants.rotationAngel
+        textureView?.rotation = Constants.rotationAngle
     }
 
     private fun generateDisplayItemList() {
@@ -615,6 +629,19 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     inner@ for (item in playlist ?: emptyList()) {
                         if (item.sIncluded ==  false) {
                             Log.d("PlayerSkipping", "${item.mediaName}")
+                            continue@inner
+                        }
+                        if((item.shareData?.length ?: 0) > 10) {
+                     //       Log.d("PlaylistLayoutShareData", item.shareData.toString())
+                            playLayoutInMediaAsync(item.shareData ?: "[]").await()
+                            Log.d("PlaylistLayoutDuration", "${item.duration}")
+                            for (i in 0 until (item.duration ?: 20)) {
+                                if (currentMedia != CURRENT_PLAYLIST) {
+                                    break@inner
+                                }
+                                delay(1000)
+                            }
+                            clearMediaPlayers()
                             continue@inner
                         }
                         val itemName : String = item.mediaName ?: "NA"
@@ -666,13 +693,122 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             }
         }
 
+    private suspend fun playLayoutInMediaAsync(shareDataJson: String,
+                                               isVertical : Boolean = false) =
+        coroutineScope {
+            async(Dispatchers.Main) {
+                pImage.visibility = View.GONE
+                pImage2.visibility = View.GONE
+                pVideo.visibility = View.GONE
+                customLayout.visibility = View.VISIBLE
+                releaseYoutubePlayers()
+                proBar.visibility = View.GONE
+                customLayout.removeAllViews()
+                if (mediaPlayer.isPlaying) {
+                    try {
+                        mediaPlayer.stop()
+                    } catch (e:Exception) {
+                        Log.e("ErrorPlaylistVideo", "$e")
+                    }
+                }
+                Log.d("NewShareData", shareDataJson)
+                val gson = Gson()
+                val typeT = object: TypeToken<List<CustomLayoutObject.LayoutInfo>>() {}.type
+                val layoutList = gson.fromJson<List<CustomLayoutObject.LayoutInfo>>(shareDataJson, typeT)
+         /*       val layoutList: List<CustomLayoutObject.LayoutInfo> =
+                    Constants.getObjectFromJson(JSONArray(shareDataJson).toString())  */
+                Log.d("NewSharedata", layoutList.size.toString())
+                for(layout in layoutList) {
+                    Log.d("InsideLayout", "height ${layout.height}")
+                    var layoutWidth : Int = (layout.width ?: 0).toInt()
+                    var layoutHeight : Int = (layout.height ?: 0).toInt()
+                    var layoutX : Int = (layout.x ?: 0).toInt()
+                    var layoutY : Int = (layout.y ?: 0).toInt()
+                    if (isVertical == true) {
+                        layoutWidth = (layout.height ?: 0).toInt()
+                        layoutHeight = (layout.width ?: 0).toInt()
+                        layoutX = (layout.y ?: 0).toInt()
+                        layoutY = (layout.x ?: 0).toInt()
+                    }
+                    val linearLayout = LinearLayout(ctx)
+                    val isVertical : Boolean = isVertical ?: false
+                    if (layout.opacity != null) {
+                        linearLayout.alpha = layout.opacity ?: 1f
+                    }
+                    linearLayout.layoutParams = ConstraintLayout.LayoutParams(
+                        (layoutWidth * wMulti).toInt(), (layoutHeight * hMulti).toInt()).apply {
+                        when(Constants.rotationAngle) {
+                            0f -> {
+                                if (isVertical) {
+                                    // not available
+                                } else {
+                                    startToStart = R.id.customLayout
+                                    topToTop = R.id.customLayout
+                                    marginStart = (layoutX * wMulti).toInt()
+                                    topMargin = (layoutY * hMulti).toInt()
+                                }
+                            }
+                            90f -> {
+                                if (isVertical) {
+                                    endToEnd = R.id.customLayout
+                                    topToTop = R.id.customLayout
+                                    marginEnd = (layoutX * wMulti).toInt()
+                                    topMargin = (layoutY * hMulti).toInt()
+                                } else {
+                                    // not supported
+                                }
+                            }
+                            180f -> {
+                                if (isVertical) {
+                                    // not supported
+                                } else {
+                                    endToEnd = R.id.customLayout
+                                    bottomToBottom = R.id.customLayout
+                                    marginEnd = (layoutX * wMulti).toInt()
+                                    bottomMargin = (layoutY * hMulti).toInt()
+                                }
+                            }
+                            270f -> {
+                                if (isVertical) {
+                                    startToStart = R.id.customLayout
+                                    topToTop = R.id.customLayout
+
+                                    marginStart = (layoutX * wMulti).toInt()
+                                    topMargin =
+                                        MainActivity.displayHeight - (layoutHeight * hMulti).toInt() - (layoutY * hMulti).toInt()
+                                } else {
+                                    // not supported
+                                }
+                            }
+                        }
+                    }
+                    customLayout.addView(linearLayout)
+                    //              customWebView = null
+                    //              youView?.release()
+                    //             youView = null
+                    CoroutineScope(Dispatchers.Main).launch {
+                        imRunning = true
+                        // with new method assuming looping to be always true
+                        playCustomMedia2Async(
+                            linearLayout,
+                            layout.media ?: emptyList(),
+                            isVertical ?: false,
+                                    0, false).await()
+                        Log.d("CustomRunning", "one finished")
+                        customContentFinished += 1
+                    }
+                }
+            }
+        }
+
 
     @SuppressLint("CheckResult", "SetJavaScriptEnabled")
     private suspend fun playCustomMedia2Async(
-        layout: LinearLayout,
-        mediaList: List<CustomLayoutObject.MediaInfo>, isVertical: Boolean, youtubeCount: Int) =
+        layout: LinearLayout, mediaList: List<CustomLayoutObject.MediaInfo>,
+            isVertical: Boolean, youtubeCount: Int, isCustomOrPlaylist : Boolean = true) =
         coroutineScope {
             async(Dispatchers.Main) {
+                Log.d("TestingMediaSize", "${mediaList.size}")
                 if (mediaList.size == 1) {
                     val mediaInfo = mediaList[0]
                     val fileName = mediaInfo.fileName
@@ -685,12 +821,16 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                 LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.MATCH_PARENT)
                             layout.addView(imageView)
                             try {
-                                val imageFile = File(MainActivity.storageDir, "${Constants.CUSTOM_CONTENT_DIR}/$fileName")
+                                val imageFile = if (isCustomOrPlaylist) {
+                                    File(MainActivity.storageDir, "${Constants.CUSTOM_CONTENT_DIR}/$fileName")
+                                } else {
+                                    File(MainActivity.storageDir, "${Constants.PLAYLIST_DIR_NAME}/$fileName")
+                                }
                                 val glide = Glide.with(ctx)
                                     .load(imageFile)
                                     .diskCacheStrategy(DiskCacheStrategy.NONE)
                                     .override(layout.width,layout.height)
-                                glide.transform(RotateTransformation(Constants.rotationAngel))
+                                glide.transform(RotateTransformation(Constants.rotationAngle))
                                 glide.into(imageView)
                             } catch (e: Exception) {
                                 Log.e("CustomView", "$e at $fileName")
@@ -726,7 +866,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
 
                                     override fun onSurfaceTextureUpdated(p0: SurfaceTexture) { }
                                 }
-                            textureView.layoutParams = if (isVertical || Constants.rotationAngel == 90f || Constants.rotationAngel == 270f) {
+                            textureView.layoutParams = if (isVertical || Constants.rotationAngle == 90f || Constants.rotationAngle == 270f) {
                                 LinearLayout.LayoutParams(
                                     layout.height, layout.width).apply {
                                     topMargin = (layout.height - layout.width) / 2
@@ -738,8 +878,12 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                             }
                             try {
                                 layout.addView(textureView)
-                                textureView.rotation = Constants.rotationAngel
-                                val videoFile = File(MainActivity.storageDir, "${Constants.CUSTOM_CONTENT_DIR}/$fileName")
+                                textureView.rotation = Constants.rotationAngle
+                                val videoFile = if(isCustomOrPlaylist) {
+                                    File(MainActivity.storageDir, "${Constants.CUSTOM_CONTENT_DIR}/$fileName")
+                                } else {
+                                    File(MainActivity.storageDir, "${Constants.PLAYLIST_DIR_NAME}/$fileName")
+                                }
                                 mediaPlayer.setDataSource(videoFile.toString())
                                 mediaPlayer.setVolume(0f,0f)
                                 mediaPlayer.isLooping = true
@@ -863,7 +1007,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                     })
                                 }
                             })
-                            youView.rotation = Constants.rotationAngel
+                            youView.rotation = Constants.rotationAngle
                             layout.addView(youView)
                       /*      } else {
                                 layout.addView(youView)
@@ -896,7 +1040,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                            customWebView.settings.allowContentAccess = true
                            customWebView.settings.domStorageEnabled = true
                            customWebView.loadUrl(mediaInfo.fileName ?: "NA")
-                            customWebView.rotation = Constants.rotationAngel
+                            customWebView.rotation = Constants.rotationAngle
                            layout.addView(customWebView)
 
                              /* }  else {
@@ -949,7 +1093,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
 
                             override fun onSurfaceTextureUpdated(p0: SurfaceTexture) { }
                         }
-                    textureView.layoutParams = if (isVertical || Constants.rotationAngel == 90f || Constants.rotationAngel == 270f) {
+                    textureView.layoutParams = if (isVertical || Constants.rotationAngle == 90f || Constants.rotationAngle == 270f) {
                         LinearLayout.LayoutParams(
                             layout.height,
                             layout.width
@@ -966,7 +1110,8 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     layout.addView(textureView)
                     var evenImage = false
                     mediaPlayerList.add(mediaPlayer)
-                    mainLoop@ while(currentMedia == CURRENT_CUSTOM) {
+                    val mediaToObserve = if(isCustomOrPlaylist) CURRENT_CUSTOM else CURRENT_PLAYLIST
+                    mainLoop@ while(currentMedia == mediaToObserve) {
                         for (media in mediaList) {
                             val fileName = media.fileName
                             val mediaTime = (media.timeInSeconds?.toLong() ?: 10000L) * 1000
@@ -974,15 +1119,18 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                 Constants.MEDIA_IMAGE -> {
                                     try {
                                         textureView.visibility = View.GONE
-                                        val imageFile = File(
-                                            MainActivity.storageDir,
-                                            "${Constants.CUSTOM_CONTENT_DIR}/$fileName"
-                                        )
+                                        val imageFile = if (isCustomOrPlaylist) {
+                                            File(MainActivity.storageDir,
+                                                "${Constants.CUSTOM_CONTENT_DIR}/$fileName")
+                                        } else {
+                                            File(MainActivity.storageDir,
+                                                "${Constants.PLAYLIST_DIR_NAME}/$fileName")
+                                        }
                                         val glide = Glide.with(ctx)
                                             .load(imageFile)
                                             .diskCacheStrategy(DiskCacheStrategy.NONE)
                                             .override(layout.width,layout.height)
-                                        glide.transform(RotateTransformation(Constants.rotationAngel))
+                                        glide.transform(RotateTransformation(Constants.rotationAngle))
                                         if (evenImage) {
                                             glide.into(imageView)
                                             evenImage = false
@@ -997,7 +1145,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                             imageView.visibility = View.GONE
                                         }
                                         for (i in 0..(mediaTime/1000)) {
-                                            if (currentMedia != CURRENT_CUSTOM) {
+                                            if (currentMedia != mediaToObserve) {
                                                 Log.d("CustomLayout", "Stopping main loop")
                                                 break@mainLoop
                                             }
@@ -1015,8 +1163,12 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                             imageView2.visibility = View.GONE
                                             textureView.visibility = View.VISIBLE
                                         }, 1000)
-                                        textureView.rotation = Constants.rotationAngel
-                                        val videoFile = File(MainActivity.storageDir, "${Constants.CUSTOM_CONTENT_DIR}/$fileName")
+                                        textureView.rotation = Constants.rotationAngle
+                                        val videoFile = if (isCustomOrPlaylist) {
+                                            File(MainActivity.storageDir, "${Constants.CUSTOM_CONTENT_DIR}/$fileName")
+                                        } else {
+                                            File(MainActivity.storageDir, "${Constants.PLAYLIST_DIR_NAME}/$fileName")
+                                        }
                                         mediaPlayer.setDataSource(videoFile.toString())
                                         mediaPlayer.setVolume(0f,0f)
                                         mediaPlayer.isLooping = true
@@ -1095,10 +1247,15 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             } catch (e:Exception) {
                 15f
             }
+            val fontFamily = try {
+                jsonObject.get("fontFamily").toString()
+            } catch (e: Exception) {
+                "Times New Roman"
+            }
             val layoutParams = ConstraintLayout.LayoutParams(
                 ConstraintLayout.LayoutParams.WRAP_CONTENT, ConstraintLayout.LayoutParams.WRAP_CONTENT
             ).apply {
-                when(Constants.rotationAngel) {
+                when(Constants.rotationAngle) {
                     0f -> {
                         startToStart = R.id.weatherAndTimeLayout
                         topToTop = R.id.weatherAndTimeLayout
@@ -1127,7 +1284,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             }
             weatherText.layoutParams = layoutParams
             weatherText.includeFontPadding = false
-            weatherText.rotation = Constants.rotationAngel
+            weatherText.rotation = Constants.rotationAngle
             val text = try { jsonObject.get("text").toString()
             } catch (e:Exception) { "" }
             val isInFern = text.contains("F")
@@ -1135,7 +1292,18 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 { jsonObject.get("fill").toString()
                 } catch (e:Exception) { "rgba(0, 0, 0, 1)" })
             weatherText.setTextColor(textColor)
-            weatherText.textSize = fontSize
+
+            // try to get fontsize multiplier
+//            1080i 320dpi  okay -> size/dpi = 3.375
+//            720p 213dpi okay -> size/dpi = 3.38029
+//
+//            --large text
+//                    720p 320dpi very large -> size/dpi = 2.25
+//            720p 240dpi little big -> size/dpi = 3
+//
+//
+//            size/dpi ratio small = large fonts
+            weatherText.textSize = fontSize * fontSizeMultiplier
             val latLongString = try {
                 jsonObject.get("link").toString()
             } catch (e:Exception) { ""}
@@ -1176,7 +1344,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             val layoutParamsIcon = ConstraintLayout.LayoutParams(
                 iconSize,iconSize
             ).apply {
-                when(Constants.rotationAngel) {
+                when(Constants.rotationAngle) {
                     0f -> {
                         startToStart = R.id.weatherAndTimeLayout
                         topToTop = R.id.weatherAndTimeLayout
@@ -1214,7 +1382,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             weatherIcon.layoutParams = layoutParamsIcon
             weatherIcon.scaleX = iconScaleX
             weatherIcon.scaleY = iconScaleY
-            weatherIcon.rotation = Constants.rotationAngel
+            weatherIcon.rotation = Constants.rotationAngle
 
             CoroutineScope(Dispatchers.Main).launch {
                 val weatherArray = getWeatherFromApiAsync(latLongString).await()
@@ -1242,6 +1410,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                         iconDrawable , ctx.theme))
                 wNtLayout.addView(weatherIcon)
             }
+            setSelectedFonts(fontFamily, weatherText)
             wNtLayout.addView(weatherText)
         }
     }
@@ -1256,25 +1425,26 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             val y = jsonObject.get("y").toString().toInt()
             Log.d("X and Y", "$x and $y")
             val text = jsonObject.get("text").toString()
-            val timeInAMPM = text.contains("AM ") || text.contains("PM ")
+            val timeInAMPM = text.contains(" AM") || text.contains(" PM")
             val isTimeElseDate = text.contains(":")
             val textColor = getColorFromString(jsonObject.get("fill").toString())
             timeText.setTextColor(textColor)
             timeText.text = "---"
             val fontSize = jsonObject.get("fontSize").toString().toFloat()
+            val fontFamily = jsonObject.get("fontFamily").toString()
             val bgColorString: String = try {
                 jsonObject.get("backgroundColor").toString()
             } catch (e: Exception) {
                 "rgba(0,0,0,0)"
             }
             val bgColor = getColorFromString(bgColorString)
-            timeText.textSize = fontSize
+            timeText.textSize = fontSize * fontSizeMultiplier
             timeText.includeFontPadding = false
             timeText.setLineSpacing(Constants.weatherAndTimeTextLineSpacing1080, 1f)
             val layoutParams = ConstraintLayout.LayoutParams(
                 ConstraintLayout.LayoutParams.WRAP_CONTENT, ConstraintLayout.LayoutParams.WRAP_CONTENT
             ).apply {
-                when(Constants.rotationAngel) {
+                when(Constants.rotationAngle) {
                     0f -> {
                         startToStart = R.id.weatherAndTimeLayout
                         topToTop = R.id.weatherAndTimeLayout
@@ -1302,7 +1472,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 }
             }
             timeText.layoutParams = layoutParams
-            timeText.rotation = Constants.rotationAngel
+            timeText.rotation = Constants.rotationAngle
                 val timeZoneString  = jsonObject.get("link").toString()
                 CoroutineScope(Dispatchers.Main).launch {
                     val time = getTimeFromAPIAsync(timeZoneString).await()
@@ -1323,6 +1493,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     Log.e("ErrorWeatherShadow", "$e")
                 }
             }
+            setSelectedFonts(fontFamily, timeText) // for testing only
             wNtLayout.addView(timeText)
         }
         timeHandler.removeCallbacks(timeRunnable)
@@ -1445,6 +1616,40 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 }
             }
         }
+
+    private fun setSelectedFonts(font: String, textView : TextView) {
+        var typeface : Typeface? = Typeface.createFromAsset(ctx.assets, "times.ttf")
+        when(font) {
+            "Arial" -> {
+                typeface = Typeface.createFromAsset(ctx.assets, "times.ttf")
+            }
+            "Roboto" -> {
+                typeface = null
+            }
+            "Lato" -> {
+                typeface = Typeface.createFromAsset(ctx.assets, "lato.ttf")
+            }
+            "Montserrat" -> {
+                typeface = Typeface.createFromAsset(ctx.assets, "montserrat.ttf")
+            }
+            "Open Sans" -> {
+                typeface = Typeface.createFromAsset(ctx.assets, "open_sans.ttf")
+            }
+            "Oswald" -> {
+                typeface = Typeface.createFromAsset(ctx.assets, "oswald.ttf")
+            }
+            "Raleway" -> {
+                typeface = Typeface.createFromAsset(ctx.assets, "raleway.ttf")
+            }
+            "Audiowide" -> {
+                typeface = Typeface.createFromAsset(ctx.assets, "audiowide.ttf")
+            }
+            "Assistant" -> {
+                typeface = Typeface.createFromAsset(ctx.assets, "assistant.ttf")
+            }
+        }
+        textView.typeface = typeface
+    }
 
 
     class DisplayItems(val name: String)

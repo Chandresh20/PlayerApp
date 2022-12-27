@@ -82,11 +82,12 @@ class Constants {
         var deviceMemory = "0B"
 
         var onSplashScreen = true
-        var rotationAngel = 0f
+        var rotationAngle = 0f
         var showWeather = false
         var showTime = false
         var weatherDataArray = JSONArray()
         var dateTimeDataArray = JSONArray()
+        var lastLayoutVertical = false
     //    const val weatherAndTimeFontSizeMultiplier = 1.1f
     //    const val weatherIconMultiplier = 2f
         const val weatherAndTimeMargin = 25
@@ -98,7 +99,7 @@ class Constants {
         const val weatherIconScalingConstant4k = 66.6f
 
         const val APP_VERSION_CODE = 39
-        const val APP_VERSION_NAME = "Beta38.8"
+        const val APP_VERSION_NAME = "Beta39.1"
         const val APP_PLAYSTORE = ""
 
         fun getDayNameFromCal(num: Int) : String {
