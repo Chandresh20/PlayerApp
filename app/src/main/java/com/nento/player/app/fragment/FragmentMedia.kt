@@ -100,7 +100,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
         playlistTextureView = pVideo
         playlistTextureView?.surfaceTextureListener = this
         val screenId = rootView.findViewById<TextView>(R.id.screenIdText)
-        proBar = rootView.findViewById<ProgressBar>(R.id.mediaProgressBar)
+        proBar = rootView.findViewById(R.id.mediaProgressBar)
         screenId.text = Constants.screenID
 
         timeRunnable = object : Runnable {
@@ -938,7 +938,12 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                     youtubePlayerList.add(youView)
                                     Log.d("YOUTUBEPlayer", "Ready")
                                     youTubePlayer.loadVideo(videoKey ?: "null",0f)
+                                    //resume video if last playtime stored previously
+                                    var resumeSecond = MainActivity.sharedPreferences.getInt(
+                                        videoKey, 0
+                                    )
                                     if(youtubeCount > 1) youTubePlayer.mute()
+                                    var recordSeconds = 0 // to resume youtube video on next play
                                     youTubePlayer.addListener(object : YouTubePlayerListener {
 
                                         var vidDuration = 0f
@@ -949,11 +954,13 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                             youTubePlayer: YouTubePlayer,
                                             second: Float
                                         ) {
-                                            // removed for youtube loop
-                                        /*    if (vidDuration > 0 && (second >= (vidDuration - 1))) {
-                                                youView?.release()
-                                                youView = null
-                                            }  */
+                                            recordSeconds++
+                                            if(recordSeconds > 100) {
+                                                Log.d("youtubeSecond", "noted" +second.toString())
+                                                recordSeconds = 0
+                                                saveYoutubePlaytime(videoKey ?: "videoKeyUnknown", second.toInt())
+                                                // note the play time every 10 seconds to resume play on next start
+                                            }
                                         }
 
                                         override fun onError(
@@ -986,6 +993,9 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                             if(state == PlayerConstants.PlayerState.ENDED) {
                                                 youTubePlayer.seekTo(0f)
                                             }
+                                            if(state == PlayerConstants.PlayerState.PAUSED) {
+                                                youTubePlayer.play()
+                                            }
                                         }
 
                                         override fun onVideoDuration(
@@ -994,6 +1004,11 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                         ) {
                                             vidDuration = duration
                                             Log.d("YOUTUBE", "Duration: $duration")
+                                            if(resumeSecond > 0) {
+                                                Log.d("YoutubePlayer", "resuming to $resumeSecond")
+                                                youTubePlayer.seekTo(resumeSecond.toFloat())
+                                                resumeSecond = 0
+                                            }
                                         }
 
                                         override fun onVideoId(
@@ -1680,6 +1695,11 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
         }
         Log.d("YoutubeView", "Released: $released")
         youtubePlayerList.clear()
+    }
+
+    private fun saveYoutubePlaytime(videoId: String, seconds: Int) {
+        MainActivity.sharedPreferences.edit().putInt(
+            videoId, seconds).apply()
     }
 
     class ClockObject(var time: Long, val textView: TextView, val is24Hours: Boolean, val bgColor: Int, val isTimeElseDate : Boolean)

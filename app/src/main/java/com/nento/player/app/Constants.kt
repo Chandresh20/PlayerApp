@@ -98,8 +98,8 @@ class Constants {
         const val weatherIconScalingConstant720 = 22.2f
         const val weatherIconScalingConstant4k = 66.6f
 
-        const val APP_VERSION_CODE = 39
-        const val APP_VERSION_NAME = "Beta39.1"
+        const val APP_VERSION_CODE = 40
+        const val APP_VERSION_NAME = "Beta40"
         const val APP_PLAYSTORE = ""
 
         fun getDayNameFromCal(num: Int) : String {

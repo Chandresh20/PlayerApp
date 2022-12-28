@@ -105,12 +105,12 @@ class MainActivity : AppCompatActivity() {
             WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED)
         Constants.rotationAngle = sharedPreferences.getFloat(Constants.PREFS_ROTATION_ANGLE, 0f)
         Log.d("OrientationAngle", "${Constants.rotationAngle}")
-        mainViewModel = ViewModelProvider(this).get(MainViewModel::class.java)
+        mainViewModel = ViewModelProvider(this)[MainViewModel::class.java]
         mainViewModel.isIdHidden.value = sharedPreferences.getBoolean(Constants.PREFS_IS_ID_HIDDEN, false)
         msgText = findViewById(R.id.messageText)
         offlineIcon = findViewById(R.id.offlineIcon)
         countDownLayout = findViewById(R.id.countDownLayout)
-  //      Thread.setDefaultUncaughtExceptionHandler(ExceptionHandler(this))
+        Thread.setDefaultUncaughtExceptionHandler(ExceptionHandler(this))
         storageDir = applicationContext.getExternalFilesDir("Contents")!!
   //      cancelRestartAlarm()
      /*   if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
@@ -168,11 +168,14 @@ class MainActivity : AppCompatActivity() {
         checkForUpdate2()
         checkPermission()
         var screenId = sharedPreferences.getString(Constants.PREFS_SCREEN_ID, "")
+        Log.d("ScreenIdFromPrefs", "$screenId")
         if (screenId.isNullOrBlank()) {
-            screenId = Utils.generateRandomId()
+            screenId = Utils.generateRandomId2()
+            Log.d("ScreenIdFromRan", "$screenId")
             sharedPreferences.edit().putString(Constants.PREFS_SCREEN_ID, screenId).apply()
         }
         Constants.screenID = screenId
+        Log.d("ScreenIdFrom", "${Constants.screenID}")
         Constants.playerId = sharedPreferences.getString(Constants.PREFS_PLAYER_ID, "") ?: ""
 
         // check if screen is paired
@@ -1767,7 +1770,7 @@ class MainActivity : AppCompatActivity() {
                 putBoolean(Constants.PREFS_IS_RESET, true)
             }.apply()
             storageDir.deleteRecursively()
-            val screenId = Utils.generateRandomId()
+            val screenId = Utils.generateRandomId2()
             CoroutineScope(Dispatchers.Main).launch {
                 mainViewModel.isScreenPaired.value = true
             }
