@@ -8,7 +8,6 @@ import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.Settings
-import android.util.Log
 import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -50,7 +49,6 @@ class TVActivity : AppCompatActivity() {
     private fun checkDrawOverlayPermission2() {
         try {
             val canDraw = Settings.canDrawOverlays(this)
-            Log.d("CanDrawOverlay", "$canDraw")
             if (!canDraw) {
                 val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
                 intent.data = Uri.parse("package:$packageName")

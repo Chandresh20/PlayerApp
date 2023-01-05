@@ -1,7 +1,6 @@
 package com.nento.player.app
 
 import android.content.Context
-import android.util.Log
 import android.widget.VideoView
 
 class CustomVideoView(ctx: Context) : VideoView(ctx) {
@@ -23,8 +22,6 @@ class CustomVideoView(ctx: Context) : VideoView(ctx) {
                 height = width * mVideoHeight / mVideoWidth
             } else if (mVideoWidth * height < width * mVideoHeight) {
                 width = height * mVideoWidth / mVideoHeight
-            } else {
-                Log.d("Video", "Parameters are 0")
             }
         }
         setMeasuredDimension(width, height)

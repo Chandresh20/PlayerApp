@@ -84,11 +84,9 @@ public class WifiConnectManager extends Service {
     @Override
     public void onCreate() {
         Toast.makeText(this, "My Service Created", Toast.LENGTH_LONG).show();
-        Log.d(LOGTAG,"onStartCommand.");
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if (mBluetoothAdapter == null) {
             // Device does not support Bluetooth
-            Log.d(LOGTAG,"No bluetooth device");
             Toast.makeText(getmyservicecontext(), "No bluetooth device...", Toast.LENGTH_LONG).show();
         } else {
             Method setscanmodemethod = null,setDiscovermethod = null;
@@ -106,7 +104,6 @@ public class WifiConnectManager extends Service {
                 int value = (int) setDiscovermethod.invoke(mBluetoothAdapter);
 
                 int blediscoverablemode = mBluetoothAdapter.getScanMode();
-                Log.d(LOGTAG,"BLE Timeout " + value + "Discoverable Mode: " + blediscoverablemode);
 
             } catch (IllegalArgumentException | IllegalAccessException | InvocationTargetException e) {
                 e.printStackTrace();
@@ -160,7 +157,6 @@ public class WifiConnectManager extends Service {
                 String EXTRA_DEVICE = "android.bluetooth.device.extra.DEVICE";
                 BluetoothDevice device = intent1.getParcelableExtra("android.bluetooth.device.extra.DEVICE");
                 try {
-                    Log.d(TAG,"BLUETOOTH PAIRING REQUEST Name: " + device.getName() + " Address: " + device.getAddress() );
 
                     device.getClass().getMethod("setPairingConfirmation", boolean.class).invoke(device, true);
                     abortBroadcast();
@@ -200,7 +196,6 @@ public class WifiConnectManager extends Service {
         getmyservicecontext().getApplicationContext().unregisterReceiver(mWifiScanReceiver);
         getmyservicecontext().getApplicationContext().unregisterReceiver(mWifiStateReceiver);
 
-        Log.d(TAG, "onDestroy");
     }
 
 
@@ -211,7 +206,6 @@ public class WifiConnectManager extends Service {
                 Toast.makeText(this, "Bluetooth name changed to: " + nbtname, Toast.LENGTH_LONG).show();
                 mBluetoothAdapter.setName(nbtname);
             }
-            Log.d("BLUETOOTHNAME" , "nbtname: "+ nbtname);
         }
     }
 
@@ -240,7 +234,6 @@ public class WifiConnectManager extends Service {
                 }
                 SSIDresults = wifiManager.getScanResults();
                 SSIDsize = SSIDresults.size();
-                Log.d(LOGTAG, "WifiScanReceiver: " + SSIDsize);
             }
         }
     };
@@ -258,7 +251,6 @@ public class WifiConnectManager extends Service {
                 if (info != null) {
                     WifiInfo wifiInfo = wifiManager.getConnectionInfo();
                     String ssid = wifiInfo.getSSID();
-                    Log.d(LOGTAG, "Intent action: mWifiStateReceiver CONNECTIVITY_ACTION connected: " + info.isConnected() + " ssid: " + ssid);
                     connectedSSIDName  = ssid;
                     if (info.isConnected()) {
                         if(guserselectedbluetoothdevice!=null) {
@@ -278,7 +270,6 @@ public class WifiConnectManager extends Service {
             } else {
                 if (intent.getAction().equals(WifiManager.SUPPLICANT_STATE_CHANGED_ACTION)) {
                     if (intent.hasExtra(WifiManager.EXTRA_SUPPLICANT_ERROR)) {
-                        Log.d(LOGTAG, "Wifi Connection failed: SUPPLICANT_STATE_CHANGED_ACTION");
                         if(guserselectedbluetoothdevice!=null) {
                             new Thread(new ConnectThread(guserselectedbluetoothdevice, false)).start();
                         }
@@ -289,14 +280,12 @@ public class WifiConnectManager extends Service {
                         if(guserselectedbluetoothdevice!=null) {
                             new Thread(new ConnectThread(guserselectedbluetoothdevice, true)).start();
                         }
-                        Log.d(LOGTAG, "Wifi Connected successfully:SUPPLICANT_CONNECTION_CHANGE_ACTION");
                         Toast.makeText(getmyservicecontextthis(), "Wifi Connected successfully:SUPPLICANT_CONNECTION_CHANGE_ACTION", Toast.LENGTH_LONG).show();
                     } else {
                         // wifi connection was lost
                         if(guserselectedbluetoothdevice!=null) {
                             new Thread(new ConnectThread(guserselectedbluetoothdevice, false)).start();
                         }
-                        Log.d(LOGTAG, "wifi connection was lost:SUPPLICANT_CONNECTION_CHANGE_ACTION");
                         Toast.makeText(getmyservicecontextthis(), "wifi connection was lost:SUPPLICANT_CONNECTION_CHANGE_ACTION", Toast.LENGTH_LONG).show();
                     }
                 }
@@ -308,13 +297,11 @@ public class WifiConnectManager extends Service {
     private Handler handler = new Handler(new Handler.Callback() {
         @Override
         public boolean handleMessage(Message msg) {
-            Log.d(LOGTAG,msg.getData().getString("msg"));
             return true;
         }
     });
     public void mkmsg(String str) {
         //handler junk, because thread can't update screen!
-        Log.d(LOGTAG,str);
     }
 
     public  String getCurrentConnectionInfo(Context context) {
@@ -342,7 +329,6 @@ public class WifiConnectManager extends Service {
                         if (currentSSID.equals(network.SSID)) {
                             //get capabilities of current connection
                             String capabilities = network.capabilities;
-                            Log.d(TAG, network.SSID + " capabilities : " + capabilities);
 
                             if (capabilities.toUpperCase().contains("WEP")) {
                                 SecurityType = "WEP";
@@ -356,7 +342,6 @@ public class WifiConnectManager extends Service {
                     }
                 }
 
-                Log.d(LOGTAG, "SSID: " + ssid +" Frequency: " + frequency + " getLinkSpeed: " + connectionInfo.getLinkSpeed() + " Security: " + SecurityType  );
 
             }
         }
@@ -414,7 +399,6 @@ public class WifiConnectManager extends Service {
                             if (currentSSID.equals(network.SSID)) {
                                 //get capabilities of current connection
                                 String capabilities = network.capabilities;
-                                Log.d(TAG, network.SSID + " capabilities : " + capabilities);
 
                                 if (capabilities.toUpperCase().contains("WEP")) {
                                     SecurityType = "WEP";
@@ -476,9 +460,7 @@ public class WifiConnectManager extends Service {
                 }
             }
         } catch (IOException e) {
-            Log.d(LOGTAG, "BLE Read failed");
             e.printStackTrace();
-            Log.d(LOGTAG, e.getMessage());
         }
         return message;
     }
@@ -494,7 +476,6 @@ public class WifiConnectManager extends Service {
                         userselectedSSIDpassword,
                         SSIDSendtoMobilePhone.get(userselectedSSIDIndex).capabilities);
             } else {
-                Log.d(TAG," SSID Index or password invalid" );
             }
         } catch (JSONException e){
             e.printStackTrace();
@@ -503,7 +484,6 @@ public class WifiConnectManager extends Service {
 
     boolean disconnectNetwork(){
         boolean isDisconnected = wifiManager.disconnect();
-        Log.v("disconnectNetwork", "isDisconnected : " + isDisconnected);
         return  isDisconnected;
     }
 
@@ -518,11 +498,9 @@ public class WifiConnectManager extends Service {
         List<WifiConfiguration> conlist = (List<WifiConfiguration>)mWifiManager.getConfiguredNetworks();
         for (int i = 0; i < conlist.size(); i++) {
             conlist.get(i).SSID = conlist.get(i).SSID.replace("\"", "");
-            Log.d("RemoveWiFi", " i = " + i + " SSID = " + conlist.get(i).SSID + " netId = " + conlist.get(i).networkId);
             if (SSID.equals(conlist.get(i).SSID)) {
                 boolean isDisconnected = mWifiManager.removeNetwork(conlist.get(i).networkId);
                 mWifiManager.saveConfiguration();
-                Log.v("RemoveWiFi", "removeNetwork : " + isDisconnected);
                 return isDisconnected;
             }
         }
@@ -533,7 +511,6 @@ public class WifiConnectManager extends Service {
                                      String networkPass,
                                      String networkCapabilities) {
 
-        Log.d(LOGTAG, "Item clicked, SSID " + networkSSID + "scanResult.SSID Security : " + networkPass);
 
         //  RemoveWiFi();
 
@@ -544,7 +521,6 @@ public class WifiConnectManager extends Service {
             conf.priority = 40;
 
             if (networkCapabilities.toUpperCase().contains("WEP")) {
-                Log.v(LOGTAG, "Configuring WEP");
                 conf.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
                 conf.allowedProtocols.set(WifiConfiguration.Protocol.RSN);
                 conf.allowedProtocols.set(WifiConfiguration.Protocol.WPA);
@@ -564,7 +540,6 @@ public class WifiConnectManager extends Service {
                 conf.wepTxKeyIndex = 0;
 
             } else if (networkCapabilities.toUpperCase().contains("WPA")) {
-                Log.v(LOGTAG, "Configuring WPA");
 
                 conf.allowedProtocols.set(WifiConfiguration.Protocol.RSN);
                 conf.allowedProtocols.set(WifiConfiguration.Protocol.WPA);
@@ -579,7 +554,6 @@ public class WifiConnectManager extends Service {
                 conf.preSharedKey = "\"" + networkPass + "\"";
 
             } else {
-                Log.v(LOGTAG, "Configuring OPEN network");
                 conf.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.NONE);
                 conf.allowedProtocols.set(WifiConfiguration.Protocol.RSN);
                 conf.allowedProtocols.set(WifiConfiguration.Protocol.WPA);
@@ -596,13 +570,11 @@ public class WifiConnectManager extends Service {
                     getApplicationContext().getSystemService(Context.WIFI_SERVICE);
             int networkId = wifiManager.addNetwork(conf);
 
-            Log.v("LOGTAG", "Add addNetwork networkId:" + networkId);
             if( networkId != -1 ) {
                 @SuppressLint("MissingPermission")
                 List<WifiConfiguration> list = wifiManager.getConfiguredNetworks();
                 for (WifiConfiguration i : list) {
                     if (i.SSID != null && i.SSID.equals("\"" + networkSSID + "\"")) {
-                        Log.v(LOGTAG, "WifiConfiguration SSID " + i.SSID);
 
                         boolean isDisconnected = wifiManager.disconnect();
                         Log.v(LOGTAG, "isDisconnected : " + isDisconnected);
@@ -659,7 +631,6 @@ public class WifiConnectManager extends Service {
                 byteString[byteString.length - 1] = 0;
                 outStream.write(byteString);
             } catch (IOException e) {
-                Log.d(LOGTAG, e.getMessage());
             }
         }
 
@@ -835,7 +806,6 @@ public class WifiConnectManager extends Service {
                                     if (currentSSID.equals(network.SSID)) {
                                         //get capabilities of current connection
                                         String capabilities = network.capabilities;
-                                        Log.d(TAG, network.SSID + " capabilities : " + capabilities);
 
                                         if (capabilities.toUpperCase().contains("WEP")) {
                                             SecurityType = "WEP";

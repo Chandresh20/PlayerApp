@@ -6,7 +6,6 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
@@ -151,19 +150,15 @@ class InitActivity : AppCompatActivity() {
 
     private fun performInAppUpdate() {
         if (Constants.APP_PLAYSTORE.isNotBlank()) {
-            Log.d("AppUpdate", "Looking for update")
             val appUpdateManager = AppUpdateManagerFactory.create(this)
             val updateInfoTask = appUpdateManager.appUpdateInfo
             updateInfoTask.addOnSuccessListener { appUpdateInfo ->
                 if(appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
-                    Log.d("AppUpdate", "`Available")
                     appUpdateManager.startUpdateFlowForResult(
                         appUpdateInfo,
                         AppUpdateType.IMMEDIATE,
                         this,
                         101)
-                } else {
-                    Log.d("AppUpdate", "No Updates")
                 }
             }
         }

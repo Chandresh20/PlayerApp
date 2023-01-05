@@ -9,7 +9,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -86,7 +85,7 @@ class MainScreenFragment : Fragment() {
                 try {
                     findNavController().navigate(R.id.action_mainScreenFragment_to_navigation_media)
                 } catch (e: Exception) {
-                    Log.e("MainScreen", "navControllerError $e")
+
                 }
                 ctx.unregisterReceiver(this)
             }
@@ -112,12 +111,8 @@ class MainScreenFragment : Fragment() {
         resetJson.put("type", "reset_screen_app")
         ApiService.apiService.sendResetCommandToServer(resetJson.toString(),
             "application/json").enqueue(object : Callback<String> {
-            override fun onResponse(call: Call<String>, response: Response<String>) {
-                Log.d("ResetCommand", "${response.body()}")
-            }
-            override fun onFailure(call: Call<String>, t: Throwable) {
-                Log.e("ResetCommand", "${t.message}")
-            }
+            override fun onResponse(call: Call<String>, response: Response<String>) {}
+            override fun onFailure(call: Call<String>, t: Throwable) {}
         })
         (ctx as MainActivity).finish()
     }

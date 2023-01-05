@@ -5,7 +5,6 @@ import android.app.Application
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
@@ -52,18 +51,10 @@ class MyApplication : Application(), LifecycleObserver {
                             mPendingIntent
                         //kill the application
                         System.exit(0)
-                    } else {
-                        Log.e(TAG, "Was not able to restart application, mStartActivity null")
                     }
-                } else {
-                    Log.e(TAG, "Was not able to restart application, PM null")
                 }
-            } else {
-                Log.e(TAG, "Was not able to restart application, Context null")
             }
-        } catch (ex: java.lang.Exception) {
-            Log.e(TAG, "Was not able to restart application")
-        }
+        } catch (ex: java.lang.Exception) { }
     }
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
     fun onAppForegrounded() {

@@ -6,7 +6,9 @@ import android.app.Application
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Context.MODE_PRIVATE
 import android.content.Intent
+import android.util.Log
 import android.widget.Toast
 import kotlin.system.exitProcess
 
@@ -14,7 +16,10 @@ class BootReceiver : BroadcastReceiver() {
 
     @SuppressLint("UnsafeProtectedBroadcastReceiver")
     override fun onReceive(p0: Context?, p1: Intent?) {
-     //   doRestart(p0)
+        val prefs = p0?.getSharedPreferences("sharedPreferencesMain", MODE_PRIVATE)
+        val rooted = prefs?.getBoolean(Constants.PREFS_DEVICE_ROOTED, false)
+        Log.d("PlayerApp", "device rooted : $rooted")
+        if (rooted != true) doRestart(p0)
     }
 
     @SuppressLint("UnspecifiedImmutableFlag")

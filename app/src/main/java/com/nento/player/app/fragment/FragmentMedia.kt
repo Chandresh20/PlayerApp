@@ -117,30 +117,28 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                         hour12 = 12
                     }
                     val amPm = cal.get(Calendar.AM_PM)
-                    var min = cal.get(Calendar.MINUTE).toString()
-                    if (min.length == 1) {
+                    val min = cal.get(Calendar.MINUTE).toString().padStart(2, '0')
+                   /* if (min.length == 1) {
                         min = "0$min"
-                    }
-
-                    Log.d("TimeRunnable", "updated $hour24 and $hour12 $amPm")
+                    } */
 
                     val clockText : String  = if(clock.isTimeElseDate) {
                         var amPmS: String
                         if(!clock.is24Hours) {
-                            var hrStr = hour12.toString()
-                            if(hrStr.length == 1) {
+                            val hrStr = hour12.toString().padStart(2, '0')
+                        /*    if(hrStr.length == 1) {
                                 hrStr = "0$hrStr"
-                            }
+                            } */
                             amPmS = "AM"
                             if(amPm == 1) {
                                 amPmS = "PM"
                             }
                             "$hrStr:$min $amPmS"
                          } else {
-                             var hrStr = hour24.toString()
-                            if(hrStr.length == 1) {
+                             val hrStr = hour24.toString().padStart(2, '0')
+                          /*  if(hrStr.length == 1) {
                                 hrStr = "0$hrStr"
-                            }
+                            } */
                             "$hrStr:$min"
                         }
                     } else {
@@ -159,8 +157,8 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
         }
         timeHandler = Handler(Looper.getMainLooper())
         errorHandler = Handler(Looper.getMainLooper()) {
-            val msg = it.obj as String
-            Log.e("MediaError", msg)
+        //    val msg = it.obj as String
+       //     Log.e("MediaError", msg)
             true
         }
 
@@ -178,7 +176,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             if ((Constants.rotationAngle == 0f
                         || Constants.rotationAngle == 180f)
                 && !isVertical) {
-                Log.d("FitXY horizontal", "------------------------")
                 if (isEvenImage) {
                     pImage2.scaleType = ImageView.ScaleType.FIT_XY
                 } else {
@@ -188,7 +185,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             if ((Constants.rotationAngle == 0f
                         || Constants.rotationAngle == 180f)
                 && isVertical) {
-                Log.d("FitCenter Vertical", "--------------------------")
                 if (isEvenImage) {
                     pImage2.scaleType = ImageView.ScaleType.FIT_CENTER
                 } else {
@@ -198,7 +194,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             if ((Constants.rotationAngle == 90f
                         || Constants.rotationAngle == 270f)
                 && isVertical) {
-                Log.d("FitXY vertical", "-----------------------------")
                 if (isEvenImage) {
                     pImage2.scaleType =ImageView.ScaleType.FIT_XY
                 } else {
@@ -209,7 +204,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             if ((Constants.rotationAngle == 90f
                         || Constants.rotationAngle == 270f)
                 && !isVertical) {
-                Log.d("FitCenter Horizontal", "----------------------------")
                 if (isEvenImage) {
                     pImage2.scaleType = ImageView.ScaleType.FIT_CENTER
                 } else {
@@ -232,7 +226,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 isEvenImage = false
                 CoroutineScope(Dispatchers.Main).launch {
                     delay(500)
-                    Log.d("ShowingImage", "Even")
                     pImage.visibility = View.GONE
                     pImage2.visibility = View.VISIBLE
                 }
@@ -241,7 +234,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 isEvenImage = true
                 CoroutineScope(Dispatchers.Main).launch {
                     delay(500)
-                    Log.d("ShowingImage", "Odd")
                     pImage.visibility = View.VISIBLE
                     pImage2.visibility = View.GONE
                 }
@@ -253,19 +245,16 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 try {
                     mediaPlayer.stop()
                 } catch (e:Exception) {
-                    Log.e("ErrorPlaylistVideo", "$e")
                 }
             }
             true
         }
         videoHandler = Handler(Looper.getMainLooper()) {
             val file = it.obj as String
-            Log.d("VideoHandler", file)
             if (file == Constants.STOP_VIDEO) {
                 try {
                     mediaPlayer.stop()
                 } catch (e:Exception) {
-                    Log.e("ErrorPlaylistVideo", "$e")
                 }
                 return@Handler false
             }
@@ -281,7 +270,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 customLayout.removeAllViews()
             } ,2000)  // video play needs some time directly showing video/textureView
             // make the app frozen for few moment. that's why it delayed
-            Log.d("FileToPlay", file)
             setWeatherAndTimeLayout(weatherAndTimeLayout)
             true
         }
@@ -299,7 +287,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 try {
                     mediaPlayer.stop()
                 } catch (e:Exception) {
-                    Log.e("ErrorPlaylistVideo", "$e")
                 }
             }
             try {
@@ -311,7 +298,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 val customInfoFile = File(MainActivity.storageDir, Constants.CUSTOM_LAYOUT_JSON_NAME)
                 val jsonStr = customInfoFile.readText()
                 val dLayoutObject = gson.fromJson<CustomLayoutObject>(jsonStr, typeT.type)
-                Log.d("CustomLayouts", "${dLayoutObject.layout?.size}")
 
                 // get total numbers of youtube videos, if more than one video then youtube should be muted,
                 // to play multiple videos simultaneously
@@ -323,10 +309,8 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                         }
                     }
                 }
-                Log.d("YoutubeVideos", "$youtubeVideoCount available")
 
                 imRunning = true
-                Log.d("CustomRunning", "started")
 
                 totalCustomContent = dLayoutObject.layout?.size ?: 0
                 customContentFinished = 0
@@ -355,7 +339,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 }
                 MainActivity.sharedPreferences.edit().putFloat(
                     Constants.PREFS_ROTATION_ANGLE, Constants.rotationAngle).apply()
-                Log.d("CustomRotationSet", "${Constants.rotationAngle}")
                 for (layout in (dLayoutObject.layout ?: emptyList())) {
                     var layoutWidth : Int = (layout.width ?: 0).toInt()
                     var layoutHeight : Int = (layout.height ?: 0).toInt()
@@ -432,27 +415,21 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                             layout.media ?: emptyList(),
                             dLayoutObject.isVertical ?: false,
                             youtubeVideoCount).await()
-                        Log.d("CustomRunning", "one finished")
                         customContentFinished += 1
                     }
                 }
-                Log.d("CustomLayout", "All layout set for new Method")
             } catch (e: Exception) {
-                Log.e("CustomError", "$e")
                 errorHandler.obtainMessage(0, "Error: $e").sendToTarget()
             }
             true
         }
         val updateReceiver = object : BroadcastReceiver() {
             override fun onReceive(p0: Context?, p1: Intent?) {
-                Log.d("FragmentMedia", "Media change update")
                 currentMedia = -1
                 areClocksRunning = false
                 CoroutineScope(Dispatchers.Main).launch {
                      proBar.visibility = View.VISIBLE
                     while (imRunning) {
-                        Log.d("ImRunning", "Waiting for current media to stop")
-                        Log.d("ImRunning", "customContentFinished : $customContentFinished / $totalCustomContent")
                         if (totalCustomContent > 0 && (totalCustomContent == customContentFinished)) {
                             imRunning = false
                         }
@@ -473,10 +450,8 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                         Constants.NEW_PLAYLIST_READY_BROADCAST -> {
                             currentMedia = CURRENT_PLAYLIST
                             totalCustomContent = 0
-                            val itemsInPlaylist = p1.getStringArrayExtra(Constants.C_PLAYLIST)
-                            for (item in itemsInPlaylist ?: emptyArray()) {
-                                Log.d("MediaPlaylist", item)
-                            }
+//                            val itemsInPlaylist = p1.getStringArrayExtra(Constants.C_PLAYLIST)
+//                            for (item in itemsInPlaylist ?: emptyArray()) { }
                             CoroutineScope(Dispatchers.Main).launch {
                                 delay(1000)
                                 playPlaylistAsync().await()
@@ -488,7 +463,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                         }
                         Constants.NEW_CUSTOM_LAYOUT_READY_BROADCAST -> {
                             currentMedia = CURRENT_CUSTOM
-                            Log.d("CustomLayout", "Broadcast Received")
                             customLayoutHandler.postDelayed( {
                                 customLayoutHandler.obtainMessage(0,0).sendToTarget()
                             }, 2000)
@@ -515,10 +489,8 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
     }
 
     override fun onSurfaceTextureAvailable(p0: SurfaceTexture, p1: Int, p2: Int) {
-        Log.d("SurfaceTexture", "Available")
         val surface = Surface(p0)
         mediaPlayer.setSurface(surface)
-        Log.d("SurfaceTexture", "MediaPlayer set")
     }
 
     private fun playOnMediaPlayer(file: String) {
@@ -540,17 +512,14 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 mediaPlayer.stop()
             }
         } catch (e: Exception) {
-            Log.e("playOnMediaPlayer", "$e")
         }
 
     }
 
     override fun onSurfaceTextureSizeChanged(p0: SurfaceTexture, p1: Int, p2: Int) {
-        Log.d("SurfaceTexture", "SizeChanged")
     }
 
     override fun onSurfaceTextureDestroyed(p0: SurfaceTexture): Boolean {
-        Log.d("SurfaceTexture", "Destroyed")
         return false
     }
 
@@ -611,11 +580,8 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
         for (key in records) {
             val pFile = File(MainActivity.storageDir, key)
             if (pFile.exists()) {
-                Log.d("CheckingFile", "$key available")
                 itemArray.add(DisplayItems(key))
                 //   , allRecords.get(key) as Int))
-            } else {
-                Log.e("CheckingFile", "$key not available")
             }
         }
     }
@@ -628,13 +594,11 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     imRunning = true
                     inner@ for (item in playlist ?: emptyList()) {
                         if (item.sIncluded ==  false) {
-                            Log.d("PlayerSkipping", "${item.mediaName}")
                             continue@inner
                         }
                         if((item.shareData?.length ?: 0) > 10) {
                      //       Log.d("PlaylistLayoutShareData", item.shareData.toString())
                             playLayoutInMediaAsync(item.shareData ?: "[]").await()
-                            Log.d("PlaylistLayoutDuration", "${item.duration}")
                             for (i in 0 until (item.duration ?: 20)) {
                                 if (currentMedia != CURRENT_PLAYLIST) {
                                     break@inner
@@ -650,7 +614,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                 val iFile = File(MainActivity.storageDir, "${Constants.PLAYLIST_DIR_NAME}/$itemName")
                                 val bMap = BitmapFactory.decodeFile(iFile.toString())
                                 if (bMap != null) {
-                                    Log.d("PlaylistImage", "Width: ${bMap.width}")
                                     val isVertical = bMap.height > bMap.width
                                     glideHandler.obtainMessage(0, arrayOf(iFile, isVertical)).sendToTarget()
                                     for (i in 0 until (item.duration ?: 5)) {
@@ -672,7 +635,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                             if (vFile.exists()) {
                                 videoHandler.obtainMessage(0, vFile.toString()).sendToTarget()
                             }
-                            Log.d("TestingVideoDuration", "${item.duration}")
                             for (i in 0 until (item.duration ?: 5)) {
                                 if (currentMedia != CURRENT_PLAYLIST) {
                                     break@inner
@@ -686,15 +648,13 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                 0, Constants.STOP_VIDEO).sendToTarget()
                         }
                     }
-                    Log.d("PlaylistLoop", "inner terminated")
                 }
-                Log.d("PlaylistLoop", "outer terminated")
                 imRunning = false
             }
         }
 
     private suspend fun playLayoutInMediaAsync(shareDataJson: String,
-                                               isVertical : Boolean = false) =
+                                               isVertical1 : Boolean = false) =
         coroutineScope {
             async(Dispatchers.Main) {
                 pImage.visibility = View.GONE
@@ -708,30 +668,26 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     try {
                         mediaPlayer.stop()
                     } catch (e:Exception) {
-                        Log.e("ErrorPlaylistVideo", "$e")
                     }
                 }
-                Log.d("NewShareData", shareDataJson)
                 val gson = Gson()
                 val typeT = object: TypeToken<List<CustomLayoutObject.LayoutInfo>>() {}.type
                 val layoutList = gson.fromJson<List<CustomLayoutObject.LayoutInfo>>(shareDataJson, typeT)
          /*       val layoutList: List<CustomLayoutObject.LayoutInfo> =
                     Constants.getObjectFromJson(JSONArray(shareDataJson).toString())  */
-                Log.d("NewSharedata", layoutList.size.toString())
                 for(layout in layoutList) {
-                    Log.d("InsideLayout", "height ${layout.height}")
                     var layoutWidth : Int = (layout.width ?: 0).toInt()
                     var layoutHeight : Int = (layout.height ?: 0).toInt()
                     var layoutX : Int = (layout.x ?: 0).toInt()
                     var layoutY : Int = (layout.y ?: 0).toInt()
-                    if (isVertical == true) {
+                    if (isVertical1) {
                         layoutWidth = (layout.height ?: 0).toInt()
                         layoutHeight = (layout.width ?: 0).toInt()
                         layoutX = (layout.y ?: 0).toInt()
                         layoutY = (layout.x ?: 0).toInt()
                     }
                     val linearLayout = LinearLayout(ctx)
-                    val isVertical : Boolean = isVertical ?: false
+                    val isVertical : Boolean = isVertical1
                     if (layout.opacity != null) {
                         linearLayout.alpha = layout.opacity ?: 1f
                     }
@@ -792,9 +748,8 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                         playCustomMedia2Async(
                             linearLayout,
                             layout.media ?: emptyList(),
-                            isVertical ?: false,
+                            isVertical,
                                     0, false).await()
-                        Log.d("CustomRunning", "one finished")
                         customContentFinished += 1
                     }
                 }
@@ -808,7 +763,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             isVertical: Boolean, youtubeCount: Int, isCustomOrPlaylist : Boolean = true) =
         coroutineScope {
             async(Dispatchers.Main) {
-                Log.d("TestingMediaSize", "${mediaList.size}")
                 if (mediaList.size == 1) {
                     val mediaInfo = mediaList[0]
                     val fileName = mediaInfo.fileName
@@ -833,7 +787,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                 glide.transform(RotateTransformation(Constants.rotationAngle))
                                 glide.into(imageView)
                             } catch (e: Exception) {
-                                Log.e("CustomView", "$e at $fileName")
                             }
                         }
                         Constants.MEDIA_VIDEO -> {
@@ -848,7 +801,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                     ) {
                                         val surface = Surface(p0)
                                         mediaPlayer.setSurface(surface)
-                                        Log.d("CustomVideo", "Surface Set")
                                     }
 
                                     override fun onSurfaceTextureSizeChanged(
@@ -856,11 +808,9 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                         p1: Int,
                                         p2: Int
                                     ) {
-                                        Log.d("CustomVideo", "Surface SizeChanged")
                                     }
 
                                     override fun onSurfaceTextureDestroyed(p0: SurfaceTexture): Boolean {
-                                        Log.d("CustomVideo", "Texture Destroyed")
                                         return false
                                     }
 
@@ -890,34 +840,27 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                 val timerRunnable = object : Runnable {
                                     override fun run() {
                                         try {
-                                            Log.d("MediaPlayer11","trying to seek to 0")
                                             mediaPlayer.seekTo(0)
                                             videoHandler.postDelayed(this, mediaTime)
                                         } catch (e: Exception) {
-                                            Log.e("MediaPlayer11", "replay error: $e")
                                         }
 
                                     }
                                 }
                                 mediaPlayer.setOnPreparedListener {
-                                    Log.d("CustomVideo", "MediaPlayer Set for $videoFile")
                                     it.start()
-                                    Log.d("MediaPlayer11","${mediaPlayer.duration}")
                                     if (mediaPlayer.duration > mediaTime) {
                                         videoHandler.postDelayed(timerRunnable, mediaTime)
-                                        Log.d("MediaPlayer11","posting runnable in $mediaTime")
                                     }
                                 }
                                 mediaPlayer.setOnCompletionListener {
                                     mediaPlayer.stop()
                                     mediaPlayer.release()
                                     videoHandler.removeCallbacks(timerRunnable)
-                                    Log.d("CustomVideo", "MediaPlayer released")
                                 }
                                 mediaPlayer.prepareAsync()
                                 mediaPlayerList.add(mediaPlayer)
                             } catch (e: Exception) {
-                                Log.e("CustomVideoError", "$e")
                                 delay(1000)
                             }
                         }
@@ -928,15 +871,17 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                 layout.width,
                                 layout.height
                             )
+                            Log.d("YoutubeView", "${layout.width} & ${layout.height}")
                             val videoURL = mediaInfo.fileName
                             val keyStartIndex = videoURL?.indexOf("watch?v=") ?: 0
                             val keyLength = 11
+                            youView.enableAutomaticInitialization = false
+                            youtubePlayerList.add(youView)
                             val videoKey = videoURL?.substring(keyStartIndex+8, keyStartIndex +8 + keyLength)
-                            youView.addYouTubePlayerListener(object :
+                            youView.initialize(object :
                                 AbstractYouTubePlayerListener() {
                                 override fun onReady(youTubePlayer: YouTubePlayer) {
-                                    youtubePlayerList.add(youView)
-                                    Log.d("YOUTUBEPlayer", "Ready")
+                                    Log.d("YoutubePlayer", "ready to load video")
                                     youTubePlayer.loadVideo(videoKey ?: "null",0f)
                                     //resume video if last playtime stored previously
                                     var resumeSecond = MainActivity.sharedPreferences.getInt(
@@ -956,7 +901,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                         ) {
                                             recordSeconds++
                                             if(recordSeconds > 100) {
-                                                Log.d("youtubeSecond", "noted" +second.toString())
                                                 recordSeconds = 0
                                                 saveYoutubePlaytime(videoKey ?: "videoKeyUnknown", second.toInt())
                                                 // note the play time every 10 seconds to resume play on next start
@@ -967,6 +911,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                             youTubePlayer: YouTubePlayer,
                                             error: PlayerConstants.PlayerError
                                         ) {
+                                            Log.e("YoutubeError", "$error")
                                         }
 
                                         override fun onPlaybackQualityChange(
@@ -982,19 +927,19 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                         }
 
                                         override fun onReady(youTubePlayer: YouTubePlayer) {
-                                            Log.d("YOUTUBE", "Ready")
+
                                         }
 
                                         override fun onStateChange(
                                             youTubePlayer: YouTubePlayer,
                                             state: PlayerConstants.PlayerState
                                         ) {
-                                            Log.d("YoutubePlayerState", state.toString())
+                                            Log.d("Youtube", "$state")
                                             if(state == PlayerConstants.PlayerState.ENDED) {
                                                 youTubePlayer.seekTo(0f)
                                             }
                                             if(state == PlayerConstants.PlayerState.PAUSED) {
-                                                youTubePlayer.play()
+                                               youTubePlayer.play()
                                             }
                                         }
 
@@ -1003,9 +948,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                             duration: Float
                                         ) {
                                             vidDuration = duration
-                                            Log.d("YOUTUBE", "Duration: $duration")
                                             if(resumeSecond > 0) {
-                                                Log.d("YoutubePlayer", "resuming to $resumeSecond")
                                                 youTubePlayer.seekTo(resumeSecond.toFloat())
                                                 resumeSecond = 0
                                             }
@@ -1068,7 +1011,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                    delay(1000)
                                }    */
                         }
-                        else -> { Log.e("CustomLayout", "Unknown media type")}
+                        else -> { }
                     }
                 } else {
                     val imageView = ImageView(ctx)
@@ -1090,7 +1033,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                             ) {
                                 val surface = Surface(p0)
                                 mediaPlayer.setSurface(surface)
-                                Log.d("CustomVideo", "Surface Set")
                             }
 
                             override fun onSurfaceTextureSizeChanged(
@@ -1098,11 +1040,10 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                 p1: Int,
                                 p2: Int
                             ) {
-                                Log.d("CustomVideo", "Surface SizeChanged")
+
                             }
 
                             override fun onSurfaceTextureDestroyed(p0: SurfaceTexture): Boolean {
-                                Log.d("CustomVideo", "Texture Destroyed")
                                 return false
                             }
 
@@ -1161,13 +1102,11 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                         }
                                         for (i in 0..(mediaTime/1000)) {
                                             if (currentMedia != mediaToObserve) {
-                                                Log.d("CustomLayout", "Stopping main loop")
                                                 break@mainLoop
                                             }
                                             delay(1000)
                                         }
                                     } catch (e: Exception) {
-                                        Log.e("CustomLayout", "in looping images: $e")
                                         delay(mediaTime)
                                     }
                                 }
@@ -1188,17 +1127,14 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                         mediaPlayer.setVolume(0f,0f)
                                         mediaPlayer.isLooping = true
                                         mediaPlayer.setOnPreparedListener {
-                                            Log.d("CustomVideo", "MediaPlayer Set for $videoFile")
                                             it.start()
                                         }
                                         mediaPlayer.setOnCompletionListener {
                                             mediaPlayer.stop()
-                                            Log.d("CustomVideo", "MediaPlayer stopped")
                                         }
                                         mediaPlayer.prepareAsync()
                                         for (i in 0..(mediaTime/1000)) {
                                             if (currentMedia != CURRENT_CUSTOM) {
-                                                Log.d("CustomVideo", "Stopping Main Loop")
                                                 break@mainLoop
                                             }
                                             delay(1000)
@@ -1206,14 +1142,12 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                                         mediaPlayer.stop()
                                         mediaPlayer.reset()
                                     } catch (e: Exception) {
-                                        Log.e("CustomLayout", "Media Player error in $fileName - $e")
                                         delay(mediaTime)
                                     }
                                 }
                             }
                         }
                     }
-                    Log.d("CustomLayout", "Out from the main loop")
                 }
             }
         }
@@ -1226,12 +1160,10 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 player.release()
                 released += 1
             } catch (e: Exception) {
-                Log.e("Error releasing player", "$e")
             }
 
         }
         mediaPlayerList.clear()
-        Log.d("CustomLayout", "$released media player stopped and released")
     }
 
     private fun setWeatherAndTimeLayout(wNtLayout: ConstraintLayout) {
@@ -1438,7 +1370,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             val jsonObject = jsonArray[i] as JSONObject
             val x = jsonObject.get("x").toString().toInt()
             val y = jsonObject.get("y").toString().toInt()
-            Log.d("X and Y", "$x and $y")
             val text = jsonObject.get("text").toString()
             val timeInAMPM = text.contains(" AM") || text.contains(" PM")
             val isTimeElseDate = text.contains(":")
@@ -1505,7 +1436,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                     val ofY = shadowObject.get("offsetY").toString().toFloat()
                     timeText.setShadowLayer(blur, ofX, ofY, shadowColor)
                 } catch (e: Exception) {
-                    Log.e("ErrorWeatherShadow", "$e")
                 }
             }
             setSelectedFonts(fontFamily, timeText) // for testing only
@@ -1529,7 +1459,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                 colorsArray[1].toInt(),
                 colorsArray[2].toInt()
             )
-            Log.d("ColorString", finalString)
         }
         return color
     }
@@ -1538,9 +1467,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
         coroutineScope {
             async(Dispatchers.IO) {
                 try {
-                    Log.d("weatherLink", latLong)
                     val latLongSplits = latLong.split(",")
-                    Log.d("weatherLinkSize", "${latLongSplits.size}")
                     if (latLongSplits.size < 2) return@async arrayOf("Error", "err")
                     val latitude = latLongSplits[0]
                     val longitude = latLongSplits[1]
@@ -1578,15 +1505,11 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                         } else {
                             !(sunriseTimeUtc < currentUtcTimeStr && currentUtcTimeStr < sunsetTimeUtc)
                         }
-                        Log.d("NewSunriseSunSet", "$sunriseTimeUtc --- $currentUtcTimeStr---night:$night------ $sunsetTimeUtc")
-                        Log.d("WeatherApiRes", finalString)
                         return@async arrayOf(weatherCode.toString() ,temperature.toString(), night.toString())
                     } catch (e: Exception) {
-                        Log.e("WeatherError", "$e")
                         return@async arrayOf("error", "error")
                     }
                 } catch (e: Exception) {
-                    Log.e("WeatherAPIError", "$e")
                     return@async arrayOf("Error", "$e")
                 }
             }
@@ -1596,10 +1519,8 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
         coroutineScope {
             async(Dispatchers.IO) {
                 try {
-                    Log.d("TimeZoneApi", timeZone)
                     val cal = Calendar.getInstance()
                     if(timeZone.lowercase() == cal.timeZone.id.lowercase()) {
-                        Log.d("TimeZone", "TimeZone same no api call")
                         return@async cal.timeInMillis
                     } else {
                         val url = URL("http://worldtimeapi.org/api/timezone/$timeZone")
@@ -1617,7 +1538,6 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                         val offsetMinute = utcOffsetPositiveStr.split(":")[1]
                         var millOffset = offsetHour.toInt() * 3600000
                         millOffset += (offsetMinute.toInt() * 60000)
-                        Log.d("TimeZoneAPi", "current time: ${cal.timeInMillis}, utc time: $utcTime, millOffset: $millOffset")
                         val timeToDisplayMill = if (utcOffsetString.first() == '-') {
                             utcTime - millOffset
                         } else {
@@ -1626,44 +1546,55 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
                         return@async timeToDisplayMill
                     }
                 } catch (e: Exception) {
-                    Log.e("TimeZoneAPI", "$e")
                     return@async -1
                 }
             }
         }
 
     private fun setSelectedFonts(font: String, textView : TextView) {
-        var typeface : Typeface? = Typeface.createFromAsset(ctx.assets, "times.ttf")
+        val typeface : Typeface? =
         when(font) {
             "Arial" -> {
-                typeface = Typeface.createFromAsset(ctx.assets, "times.ttf")
+                Typeface.createFromAsset(ctx.assets, "times.ttf")
             }
             "Roboto" -> {
-                typeface = null
+                null
             }
             "Lato" -> {
-                typeface = Typeface.createFromAsset(ctx.assets, "lato.ttf")
+                Typeface.createFromAsset(ctx.assets, "lato.ttf")
             }
             "Montserrat" -> {
-                typeface = Typeface.createFromAsset(ctx.assets, "montserrat.ttf")
+                Typeface.createFromAsset(ctx.assets, "montserrat.ttf")
             }
             "Open Sans" -> {
-                typeface = Typeface.createFromAsset(ctx.assets, "open_sans.ttf")
+                Typeface.createFromAsset(ctx.assets, "open_sans.ttf")
             }
             "Oswald" -> {
-                typeface = Typeface.createFromAsset(ctx.assets, "oswald.ttf")
+                Typeface.createFromAsset(ctx.assets, "oswald.ttf")
             }
             "Raleway" -> {
-                typeface = Typeface.createFromAsset(ctx.assets, "raleway.ttf")
+                Typeface.createFromAsset(ctx.assets, "raleway.ttf")
             }
             "Audiowide" -> {
-                typeface = Typeface.createFromAsset(ctx.assets, "audiowide.ttf")
+                Typeface.createFromAsset(ctx.assets, "audiowide.ttf")
             }
             "Assistant" -> {
-                typeface = Typeface.createFromAsset(ctx.assets, "assistant.ttf")
+                Typeface.createFromAsset(ctx.assets, "assistant.ttf")
+            }
+            "Apollos Mum" -> {
+                Typeface.createFromAsset(ctx.assets, "apollos_mum.ttf")
+            }
+            "Chocolicious" -> {
+                Typeface.createFromAsset(ctx.assets, "chocolicious.ttf")
+            }
+            "Dinomiko" -> {
+                Typeface.createFromAsset(ctx.assets, "dinomiko.otf")
+            }
+            else -> {
+                Typeface.createFromAsset(ctx.assets, "times.ttf")
             }
         }
-        textView.typeface = typeface
+        if(typeface != null) textView.typeface = typeface
     }
 
 
@@ -1693,7 +1624,7 @@ class FragmentMedia : Fragment(), TextureView.SurfaceTextureListener {
             player.release()
             released++
         }
-        Log.d("YoutubeView", "Released: $released")
+        Log.d("youtubePlayer", "released $released")
         youtubePlayerList.clear()
     }
 

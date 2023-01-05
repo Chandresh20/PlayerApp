@@ -6,14 +6,12 @@ import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import android.util.Log
 
 class InternetChangeReceiver : BroadcastReceiver() {
 
     @SuppressLint("UnsafeProtectedBroadcastReceiver")
     override fun onReceive(p0: Context?, p1: Intent?) {
         MainActivity.mainViewModel.isOffline.value = !isInternetAvailable(p0!!)
-        Log.d("PlayerAppConnectivity", "BroadcastReceived")
     }
 
     fun isInternetAvailable(context: Context): Boolean {
