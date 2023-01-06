@@ -1393,9 +1393,11 @@ class MainActivity : AppCompatActivity() {
                         call: Call<String>,
                         response: Response<String>
                     ) {
+                        Log.d("ScreenShotResponse", "$response")
                     }
 
                     override fun onFailure(call: Call<String>, t: Throwable) {
+                        Log.e("ScreenShotResponse", "${t.message}")
                     }
 
                 })
